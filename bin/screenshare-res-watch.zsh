@@ -24,7 +24,7 @@ CONFIG="${SCREENSHARE_RES_CONFIG:-$HOME/.config/screenshare-res/config.zsh}"
 : "${SCREEN_ID:?SCREEN_ID が未設定です。config.example.zsh を参照}"
 : "${LOW_CMD:?LOW_CMD が未設定です。config.example.zsh を参照}"
 : "${DISPLAYPLACER:=/opt/homebrew/bin/displayplacer}"
-: "${LSOF:=/usr/sbin/lsof}"
+: "${NETSTAT:=/usr/sbin/netstat}"
 : "${POLL_INTERVAL:=3}"
 : "${SETTLE_DELAY:=2}"
 
@@ -50,21 +50,19 @@ is_tailscale_ip() {
 }
 
 # --- 5900へのESTABLISHED接続にTailscale元があるか ---------------------
+# netstat を使う: screensharingd は root 所有で、ユーザー権限の lsof では
+# そのソケットが見えない(検知不能)。netstat は root 不要で全プロセス可視。
 # 見つけた接続元は REMOTE_IP に保存する(state ファイル表示用)
 REMOTE_IP=""
 remote_vnc_connected() {
-  local name foreign fip
-  local -a names
+  local foreign fip
+  local -a foreigns
   REMOTE_IP=""
-  names=("${(@f)$($LSOF -nP -iTCP:5900 -sTCP:ESTABLISHED -Fn 2>/dev/null | sed -n 's/^n//p')}")
-  for name in $names; do
-    [[ -z "$name" || "$name" != *'->'* ]] && continue
-    foreign="${name##*->}"
-    if [[ "$foreign" == \[* ]]; then
-      fip="${${foreign#\[}%%\]*}"   # IPv6: [addr]:port 形式
-    else
-      fip="${foreign%%:*}"
-    fi
+  foreigns=("${(@f)$($NETSTAT -anv -p tcp 2>/dev/null \
+    | awk '$6=="ESTABLISHED" && $4 ~ /\.5900$/ {print $5}')}")
+  for foreign in $foreigns; do
+    [[ -z "$foreign" ]] && continue
+    fip="${foreign%.*}"   # 末尾の .port を除去 (IPv4/IPv6 共通)
     is_tailscale_ip "$fip" && { REMOTE_IP="$fip"; return 0 }
   done
   return 1

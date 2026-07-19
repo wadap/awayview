@@ -9,16 +9,20 @@ trap '[[ -n "$WPID" ]] && kill "$WPID" 2>/dev/null; rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/bin" "$TMP/state"
 
-# lsof スタブ: $STUB_DIR/connected (IPv4) / connected6 (IPv6) で接続を返す
-cat > "$TMP/bin/lsof" <<'EOF'
+# netstat スタブ: $STUB_DIR/connected (IPv4) / connected6 (IPv6) で接続を返す
+# ローカルLAN接続(100.x でない)と非ESTABLISHED行は常に混ぜて誤検知しないことを見る
+cat > "$TMP/bin/netstat" <<'EOF'
 #!/bin/zsh
+print -r -- "Active Internet connections (including servers)"
+print -r -- "Proto Recv-Q Send-Q  Local Address          Foreign Address        (state)"
+print -r -- "tcp4       0      0  192.168.1.10.5900      192.168.1.20.50000     ESTABLISHED"
+print -r -- "tcp4       0      0  192.168.1.10.5900      100.99.1.9.50001       TIME_WAIT"
+print -r -- "tcp4       0      0  192.168.1.10.22        100.99.1.2.50002       ESTABLISHED"
 if [[ -e "$STUB_DIR/connected" ]]; then
-  print -r -- "p123"
-  print -r -- "n192.168.1.10:5900->100.99.1.2:53211"
+  print -r -- "tcp4       0      0  192.168.1.10.5900      100.99.1.2.53211       ESTABLISHED"
 fi
 if [[ -e "$STUB_DIR/connected6" ]]; then
-  print -r -- "p124"
-  print -r -- "n[fd7a:115c:a1e0::aa]:5900->[fd7a:115c:a1e0:ab12:4843:cd96:6265:b2b5]:53211"
+  print -r -- "tcp6       0      0  fd7a:115c:a1e0::aa.5900 fd7a:115c:a1e0:ab12:4843:cd96:6265:b2b5.53211 ESTABLISHED"
 fi
 exit 0
 EOF
@@ -33,13 +37,13 @@ else
   print -r -- "APPLY $*" >> "$STUB_DIR/applied.log"
 fi
 EOF
-chmod +x "$TMP/bin/lsof" "$TMP/bin/displayplacer"
+chmod +x "$TMP/bin/netstat" "$TMP/bin/displayplacer"
 
 cat > "$TMP/config.zsh" <<EOF
 SCREEN_ID="TEST"
 LOW_CMD="id:TEST res:1600x900 scaling:on origin:(0,0) degree:0"
 DISPLAYPLACER="$TMP/bin/displayplacer"
-LSOF="$TMP/bin/lsof"
+NETSTAT="$TMP/bin/netstat"
 POLL_INTERVAL=1
 SETTLE_DELAY=0
 on_low()  { print -r -- "on_low"  >> "$TMP/hooks.log" }

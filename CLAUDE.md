@@ -15,7 +15,7 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
   `launchctl bootstrap` する
 - `Makefile` — install.sh への薄いフロントドア
 - `swiftbar/screenshare-res.5s.zsh` — SwiftBar プラグイン（状態表示 + 手動固定 UI）
-- `tests/*.test.zsh` — スタブ(lsof/displayplacer/launchctl)による自動テスト。`make test`
+- `tests/*.test.zsh` — スタブ(netstat/displayplacer/launchctl)による自動テスト。`make test`
 - 状態: `~/.local/state/screenshare-res/`（`home.cmd` キャッシュ、`watch.log`、
   `state` 現在状態、`override` 高解像度固定フラグ、`force_low` 低解像度固定フラグ）
 
@@ -57,7 +57,7 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
 
 1. SwiftBar プラグイン化：この判定ロジックを流用しつつメニューバーに状態表示、
    「今は高解像度に固定 / 自動に戻す」の手動オーバーライドを追加。
-2. ネイティブ Swift メニューバーアプリ：`lsof` ポーリングと displayplacer への
+2. ネイティブ Swift メニューバーアプリ：`netstat` ポーリングと displayplacer への
    shell-out をやめ、接続監視＋ CoreGraphics 表示 API 直叩きへ。外部依存ゼロ化。
 
 判定・適用ロジックは 1→2 でそのまま再利用できる設計にしてある。

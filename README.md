@@ -48,7 +48,8 @@ make test         # スタブによる自動テスト
 
 `bin/screenshare-res-watch.zsh` が `POLL_INTERVAL` 秒ごとに:
 
-1. `lsof` で 5900 の ESTABLISHED 接続を取得、接続元 IP が `100.64.0.0/10` か判定
+1. `netstat` で 5900 の ESTABLISHED 接続を取得、接続元 IP が Tailscale 範囲か判定
+   （`lsof` はユーザー権限だと root 所有の screensharingd のソケットが見えないため不可）
 2. リモート接続あり → `LOW_CMD` を `displayplacer` で適用（初回は下げる直前に
    ホーム解像度をキャッシュ）
 3. リモート接続なし → キャッシュしたホーム配置へ復帰し、以後もホーム配置を追従キャッシュ
@@ -99,5 +100,5 @@ on_high() { open -ga "Scroll Reverser" }
 ## ロードマップ
 
 - [x] SwiftBar プラグイン化（メニューバー状態表示＋手動オーバーライド）
-- [ ] ネイティブ Swift メニューバーアプリ（`lsof`/`displayplacer` 依存を
+- [ ] ネイティブ Swift メニューバーアプリ（`netstat`/`displayplacer` 依存を
       CoreGraphics `CGDisplaySetDisplayMode` 等へ置換）

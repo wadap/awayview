@@ -16,7 +16,7 @@ LOW_CMD="id:${SCREEN_ID} res:1600x900 scaling:on origin:(0,0) degree:0"
 
 # 任意(既定値を上書きしたいときだけ) ---------------------------------
 # DISPLAYPLACER="/opt/homebrew/bin/displayplacer"
-# LSOF="/usr/sbin/lsof"
+# NETSTAT="/usr/sbin/netstat"
 # POLL_INTERVAL=3     # 監視間隔(秒)
 # SETTLE_DELAY=2      # 接続検知後、適用までの落ち着き待ち(秒)
 
