@@ -23,6 +23,12 @@ assert_contains() {
   print -r -- "$1" | grep -qF -- "$2" || { print -r -- "FAIL: '$2' が出力に無い"; print -r -- "$1"; exit 1 }
 }
 
+assert_not_contains() {
+  if print -r -- "$1" | grep -qF -- "$2"; then
+    print -r -- "FAIL: '$2' が出力に含まれる"; print -r -- "$1"; exit 1
+  fi
+}
+
 # 1) watcher 未ロード → 警告表示
 out="$(STUB_LOADED=0 zsh "$PLUGIN")"
 assert_contains "$out" "⚠️"
@@ -48,5 +54,10 @@ print -r -- 'STATE="override"'$'\n''REMOTE_IP=""'$'\n''CHANGED_AT="2026-07-19 10
 out="$(STUB_LOADED=1 zsh "$PLUGIN")"
 assert_contains "$out" "📌"
 assert_contains "$out" "自動に戻す"
+
+# 5) override 中でも watcher 未ロードなら警告が優先される(design.md §5)
+out="$(STUB_LOADED=0 zsh "$PLUGIN")"
+assert_contains "$out" "⚠️"
+assert_not_contains "$out" "📌"
 
 print -r -- "plugin tests: OK"

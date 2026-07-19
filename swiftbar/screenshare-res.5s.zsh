@@ -4,7 +4,7 @@
 # <swiftbar.hideAbout>true</swiftbar.hideAbout>
 # <swiftbar.hideRunInTerminal>true</swiftbar.hideRunInTerminal>
 # <swiftbar.hideLastUpdated>true</swiftbar.hideLastUpdated>
-# <swiftbar.hideDisabled>true</swiftbar.hideDisabled>
+# <swiftbar.hideDisablePlugin>true</swiftbar.hideDisablePlugin>
 #
 # watcher が書く state を表示し、override フラグを touch/rm する薄い UI。
 # SwiftBar なしでも直接実行して出力を確認できる。
@@ -31,7 +31,11 @@ if ! "$LAUNCHCTL" print "$GUI/$LABEL" >/dev/null 2>&1; then
   print -r -- "⚠️"
   print -r -- "---"
   print -r -- "watcher が動いていません"
-  print -r -- "watcher を起動 | bash=$LAUNCHCTL param1=bootstrap param2=$GUI param3=$PLIST terminal=false refresh=true"
+  if [[ -f "$PLIST" ]]; then
+    print -r -- "watcher を起動 | bash=$LAUNCHCTL param1=bootstrap param2=$GUI param3=$PLIST terminal=false refresh=true"
+  else
+    print -r -- "未インストール: リポジトリで make install を実行してください"
+  fi
   menu_log
   exit 0
 fi

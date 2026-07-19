@@ -37,7 +37,7 @@ make install      # = ./install.sh install
 make status       # 稼働状況＋直近ログ
 make logs         # watch.log を tail -f
 make reload       # 設定変更後の再読み込み
-make uninstall    # 常駐解除（config/log は残す）
+make uninstall    # 常駐解除・SwiftBar symlink 削除（config/log は残す）
 make check        # zsh 構文チェック
 make test         # スタブによる自動テスト
 ```

@@ -23,6 +23,7 @@ cat > "$TMP/bin/displayplacer" <<'EOF'
 if [[ "${1:-}" == "list" ]]; then
   print -r -- 'displayplacer "id:HOME res:3008x1692 origin:(0,0) degree:0"'
 else
+  [[ -e "$STUB_DIR/fail_apply" ]] && exit 1
   print -r -- "APPLY $*" >> "$STUB_DIR/applied.log"
 fi
 EOF
@@ -71,6 +72,7 @@ wait_state low
 # 3) 接続中に override → ホーム復帰して override
 touch "$TMP/state/override"
 wait_state override
+tail -1 "$TMP/applied.log" | grep -q '3008x1692' || { print -r -- "FAIL: override 中にホーム解像度が適用されていない"; exit 1 }
 
 # 4) 接続中に override 解除 → low へ戻る
 rm "$TMP/state/override"
@@ -78,6 +80,19 @@ wait_state low
 
 # 5) 切断 → home
 rm "$TMP/connected"
+wait_state home
+
+# 6) 復帰失敗中は state が進まず、成功したら override になる(誤学習ガード)
+touch "$TMP/connected"
+wait_state low
+touch "$TMP/fail_apply"
+touch "$TMP/state/override"
+sleep 2   # POLL_INTERVAL=1 で複数ループ回す
+source "$TMP/state/state"
+[[ "$STATE" == "low" ]] || { print -r -- "FAIL: 復帰失敗中に STATE=$STATE へ進んだ"; exit 1 }
+rm "$TMP/fail_apply"
+wait_state override
+rm "$TMP/state/override" "$TMP/connected"
 wait_state home
 
 grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼ばれていない"; exit 1 }

@@ -76,8 +76,13 @@ apply_low() {
 
 restore_home() {
   local why="${1:-restored}"
-  [[ -s "$HOME_CACHE" ]] || { log "!! no home cache, skip restore"; return 1 }
-  eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1 && log "-> HIGH ($why)"
+  [[ -s "$HOME_CACHE" ]] || { log "!! no home cache, skip restore"; return 2 }
+  if eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1; then
+    log "-> HIGH ($why)"
+  else
+    log "!! restore failed ($why), will retry"
+    return 1
+  fi
 }
 
 # --- state ファイル(プラグインが source して読む)。値は必ずクォート ---
@@ -102,6 +107,9 @@ while true; do
     remote_vnc_connected || true   # REMOTE_IP を表示用に更新するだけ
     if [[ "$last" != "high" ]]; then
       restore_home override
+      rc=$?
+      # 適用失敗時は capture すると低解像度を誤学習するため、次ループで再試行
+      if (( rc == 1 )); then sleep $POLL_INTERVAL; continue; fi
       last="high"
     fi
     capture_home
@@ -116,6 +124,8 @@ while true; do
   else
     if [[ "$last" != "high" ]]; then
       restore_home
+      rc=$?
+      if (( rc == 1 )); then sleep $POLL_INTERVAL; continue; fi
       last="high"
     fi
     capture_home
