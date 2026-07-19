@@ -25,6 +25,13 @@
   - 優先順位: `override`(高固定) > `force_low`(低固定) > 自動判定。
     プラグイン UI 上は相互排他（片方を立てるともう片方を消す）
 
+- **2026-07-20 モード遷移フック on_low/on_high を汎用機構として追加**
+  - 動機: モバイル利用時に Scroll Reverser(スクロール反転)を止めたい
+  - 専用組み込みではなく config.zsh の関数定義（対案: SCROLL_REVERSER フラグ）。
+    コアが特定アプリを知らず、今後の「モード連動」も config だけで拡張できる
+  - 発火点は apply_low / restore_home の成功後のみ（復帰失敗時は発火しない）。
+    フック失敗は log に記録するだけで watcher は止めない
+
 - **2026-07-19 テスト容易性のため env 上書きを導入**
   - `SCREENSHARE_RES_STATE_DIR`（watcher/プラグイン共通）と
     `SCREENSHARE_RES_LAUNCHCTL`（プラグイン）を追加

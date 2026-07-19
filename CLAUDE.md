@@ -42,6 +42,9 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
   この契約は Swift ネイティブ化(ロードマップ②)でも維持する。
 - テスト用に `SCREENSHARE_RES_STATE_DIR` / `SCREENSHARE_RES_LAUNCHCTL` で
   状態 dir と launchctl を差し替え可能（本番では未設定のまま）。
+- **モード遷移フック**: config の `on_low()` / `on_high()` を `apply_low` /
+  `restore_home` の*成功後*に呼ぶ（`run_hook`）。失敗しても watcher は止めない。
+  復帰失敗時(rc=1)はフックも発火しない — 実際に解像度が変わったときだけ発火。
 
 ## 開発フロー
 

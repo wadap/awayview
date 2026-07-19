@@ -42,6 +42,8 @@ DISPLAYPLACER="$TMP/bin/displayplacer"
 LSOF="$TMP/bin/lsof"
 POLL_INTERVAL=1
 SETTLE_DELAY=0
+on_low()  { print -r -- "on_low"  >> "$TMP/hooks.log" }
+on_high() { print -r -- "on_high" >> "$TMP/hooks.log" }
 EOF
 
 export STUB_DIR="$TMP"
@@ -70,15 +72,17 @@ wait_state() {  # state ファイルが期待値になるまで最大 5 秒待�
 # 1) 起動直後・接続なし → home
 wait_state home
 
-# 2) Tailscale 接続 → low、REMOTE_IP が入る
+# 2) Tailscale 接続 → low、REMOTE_IP が入る、on_low フックが発火
 touch "$TMP/connected"
 wait_state low
 [[ "$REMOTE_IP" == "100.99.1.2" ]] || { print -r -- "FAIL: REMOTE_IP=$REMOTE_IP"; exit 1 }
+grep -q on_low "$TMP/hooks.log" 2>/dev/null || { print -r -- "FAIL: on_low フックが呼ばれていない"; exit 1 }
 
-# 3) 接続中に override → ホーム復帰して override
+# 3) 接続中に override → ホーム復帰して override、on_high フックが発火
 touch "$TMP/state/override"
 wait_state override
 tail -1 "$TMP/applied.log" | grep -q '3008x1692' || { print -r -- "FAIL: override 中にホーム解像度が適用されていない"; exit 1 }
+grep -q on_high "$TMP/hooks.log" 2>/dev/null || { print -r -- "FAIL: on_high フックが呼ばれていない"; exit 1 }
 
 # 4) 接続中に override 解除 → low へ戻る
 rm "$TMP/state/override"

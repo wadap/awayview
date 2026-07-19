@@ -78,9 +78,19 @@ capture_home() {
   [[ -n "$cmd" ]] && print -r -- "$cmd" > "$HOME_CACHE"
 }
 
+# --- モード遷移フック: config.zsh に on_low() / on_high() があれば呼ぶ ---
+# フックの失敗は watcher 本体の動作に影響させない
+run_hook() {
+  local hook="$1"
+  whence -f "$hook" >/dev/null || return 0
+  "$hook" >> "$LOG" 2>&1 || log "!! hook $hook failed"
+}
+
 apply_low() {
   local why="${1:-Tailscale remote}"
-  eval "$DISPLAYPLACER \"$LOW_CMD\"" >> "$LOG" 2>&1 && log "-> LOW ($why)"
+  eval "$DISPLAYPLACER \"$LOW_CMD\"" >> "$LOG" 2>&1 || return 1
+  log "-> LOW ($why)"
+  run_hook on_low
 }
 
 restore_home() {
@@ -88,6 +98,7 @@ restore_home() {
   [[ -s "$HOME_CACHE" ]] || { log "!! no home cache, skip restore"; return 2 }
   if eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1; then
     log "-> HIGH ($why)"
+    run_hook on_high
   else
     log "!! restore failed ($why), will retry"
     return 1

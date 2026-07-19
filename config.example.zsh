@@ -19,3 +19,10 @@ LOW_CMD="id:${SCREEN_ID} res:1600x900 scaling:on origin:(0,0) degree:0"
 # LSOF="/usr/sbin/lsof"
 # POLL_INTERVAL=3     # 監視間隔(秒)
 # SETTLE_DELAY=2      # 接続検知後、適用までの落ち着き待ち(秒)
+
+# 任意: モード遷移フック ----------------------------------------------
+# 低解像度(モバイル利用)へ切替後に on_low、ホーム解像度(自宅利用)へ
+# 復帰後に on_high が呼ばれる。手動トグル・自動検知どちらの経路でも発火。
+# 例: モバイル利用中だけ Scroll Reverser(スクロール反転)を止める
+# on_low()  { osascript -e 'tell application "Scroll Reverser" to quit' }
+# on_high() { open -ga "Scroll Reverser" }

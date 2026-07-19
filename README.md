@@ -73,6 +73,19 @@ make swiftbar     # プラグインを symlink 設置
 `force_low`（低固定）フラグファイルを touch/rm し、watcher が毎ループ参照する。
 優先順位は `override` > `force_low` > 自動判定。
 
+## モード遷移フック（自宅⇄モバイルで他アプリも切替）
+
+config.zsh に `on_low()` / `on_high()` 関数を定義すると、低解像度への切替後 /
+ホーム復帰後に呼ばれる（手動トグル・自動検知どちらの経路でも発火）。
+例: モバイル利用中はスクロール反転（Scroll Reverser）を止める:
+
+```zsh
+on_low()  { osascript -e 'tell application "Scroll Reverser" to quit' }
+on_high() { open -ga "Scroll Reverser" }
+```
+
+フックの失敗は watcher 本体の動作に影響しない（ログに `!! hook ... failed`）。
+
 ## 制限・メモ
 
 - Tailscale 判定は **IPv4 (`100.64.0.0/10`) と IPv6 (`fd7a:115c:a1e0::/48`)**。
