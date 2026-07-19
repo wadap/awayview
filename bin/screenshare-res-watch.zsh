@@ -8,6 +8,9 @@
 #
 #   - ローカルLANからの画面共有では下げない(接続元が100.64.0.0/10でない)
 #   - ホーム解像度はホーム状態のとき自動キャッシュ→切断時に復帰
+#   - $STATE_DIR/override が存在する間は接続中でもホーム解像度を維持
+#     (SwiftBar プラグイン等の手動オーバーライド用)
+#   - 現在状態は $STATE_DIR/state に書き出す(プラグインが source して読む)
 #
 # 設定は $HOME/.config/screenshare-res/config.zsh から読む
 # (SCREENSHARE_RES_CONFIG で上書き可)。config.example.zsh を参照。
@@ -25,9 +28,11 @@ CONFIG="${SCREENSHARE_RES_CONFIG:-$HOME/.config/screenshare-res/config.zsh}"
 : "${POLL_INTERVAL:=3}"
 : "${SETTLE_DELAY:=2}"
 
-STATE_DIR="$HOME/.local/state/screenshare-res"
+STATE_DIR="${SCREENSHARE_RES_STATE_DIR:-$HOME/.local/state/screenshare-res}"
 HOME_CACHE="$STATE_DIR/home.cmd"
 LOG="$STATE_DIR/watch.log"
+STATE_FILE="$STATE_DIR/state"
+OVERRIDE_FLAG="$STATE_DIR/override"
 mkdir -p "$STATE_DIR"
 
 log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG" }
@@ -41,15 +46,18 @@ is_tailscale_ip() {
 }
 
 # --- 5900へのESTABLISHED接続にTailscale元があるか ---------------------
+# 見つけた接続元は REMOTE_IP に保存する(state ファイル表示用)
+REMOTE_IP=""
 remote_vnc_connected() {
   local name foreign fip
   local -a names
+  REMOTE_IP=""
   names=("${(@f)$($LSOF -nP -iTCP:5900 -sTCP:ESTABLISHED -Fn 2>/dev/null | sed -n 's/^n//p')}")
   for name in $names; do
     [[ -z "$name" || "$name" != *'->'* ]] && continue
     foreign="${name##*->}"
     fip="${foreign%%:*}"
-    is_tailscale_ip "$fip" && return 0
+    is_tailscale_ip "$fip" && { REMOTE_IP="$fip"; return 0 }
   done
   return 1
 }
@@ -67,26 +75,51 @@ apply_low() {
 }
 
 restore_home() {
+  local why="${1:-restored}"
   [[ -s "$HOME_CACHE" ]] || { log "!! no home cache, skip restore"; return 1 }
-  eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1 && log "-> HIGH (restored)"
+  eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1 && log "-> HIGH ($why)"
+}
+
+# --- state ファイル(プラグインが source して読む)。値は必ずクォート ---
+LAST_STATE_BODY=""
+write_state() {
+  local st="$1" body
+  body="STATE=\"$st\""$'\n'"REMOTE_IP=\"$REMOTE_IP\""
+  [[ "$body" == "$LAST_STATE_BODY" ]] && return 0
+  {
+    print -r -- "$body"
+    print -r -- "CHANGED_AT=\"$(date '+%Y-%m-%d %H:%M:%S')\""
+  } > "$STATE_FILE.tmp" && mv "$STATE_FILE.tmp" "$STATE_FILE"
+  LAST_STATE_BODY="$body"
 }
 
 log "watcher started (screen=$SCREEN_ID)"
 local last="unknown"
 
 while true; do
-  if remote_vnc_connected; then
+  if [[ -e "$OVERRIDE_FLAG" ]]; then
+    # 手動オーバーライド: 接続の有無に関わらずホーム解像度を維持
+    remote_vnc_connected || true   # REMOTE_IP を表示用に更新するだけ
+    if [[ "$last" != "high" ]]; then
+      restore_home override
+      last="high"
+    fi
+    capture_home
+    write_state override
+  elif remote_vnc_connected; then
     if [[ "$last" != "low" ]]; then
       [[ -s "$HOME_CACHE" ]] || capture_home   # 下げる前=ホーム解像度を確保
       sleep $SETTLE_DELAY
       remote_vnc_connected && { apply_low; last="low" }
     fi
+    [[ "$last" == "low" ]] && write_state low
   else
     if [[ "$last" != "high" ]]; then
       restore_home
       last="high"
     fi
     capture_home
+    write_state home
   fi
   sleep $POLL_INTERVAL
 done
