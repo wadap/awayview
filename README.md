@@ -75,8 +75,9 @@ make swiftbar     # プラグインを symlink 設置
 
 ## 制限・メモ
 
-- Tailscale 判定は **IPv4 (`100.64.0.0/10`) のみ**。IPv6 (`fd7a:…`) で入る
-  運用なら `is_tailscale_ip` を `tailscale whois` 判定に差し替える
+- Tailscale 判定は **IPv4 (`100.64.0.0/10`) と IPv6 (`fd7a:115c:a1e0::/48`)**。
+  それ以外の経路で入る運用なら `is_tailscale_ip` を `tailscale whois` 判定に
+  差し替える
 - LaunchAgent は GUI ログインセッションで動くため、ホストは自分のユーザーで
   ログインしたまま常時起動である必要がある
 - もし復帰解像度がおかしくなったら、自宅で `rm ~/.local/state/screenshare-res/home.cmd`

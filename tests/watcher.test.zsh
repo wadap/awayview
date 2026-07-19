@@ -9,12 +9,18 @@ trap '[[ -n "$WPID" ]] && kill "$WPID" 2>/dev/null; rm -rf "$TMP"' EXIT
 
 mkdir -p "$TMP/bin" "$TMP/state"
 
-# lsof スタブ: $STUB_DIR/connected があるときだけ Tailscale 接続を返す
+# lsof スタブ: $STUB_DIR/connected (IPv4) / connected6 (IPv6) で接続を返す
 cat > "$TMP/bin/lsof" <<'EOF'
 #!/bin/zsh
-[[ -e "$STUB_DIR/connected" ]] || exit 0
-print -r -- "p123"
-print -r -- "n192.168.1.10:5900->100.99.1.2:53211"
+if [[ -e "$STUB_DIR/connected" ]]; then
+  print -r -- "p123"
+  print -r -- "n192.168.1.10:5900->100.99.1.2:53211"
+fi
+if [[ -e "$STUB_DIR/connected6" ]]; then
+  print -r -- "p124"
+  print -r -- "n[fd7a:115c:a1e0::aa]:5900->[fd7a:115c:a1e0:ab12:4843:cd96:6265:b2b5]:53211"
+fi
+exit 0
 EOF
 
 # displayplacer スタブ: list はホーム配置1行、適用は applied.log へ記録
@@ -106,6 +112,13 @@ wait_state home
 touch "$TMP/state/force_low" "$TMP/state/override"
 wait_state override
 rm "$TMP/state/force_low" "$TMP/state/override"
+wait_state home
+
+# 9) IPv6 (fd7a:115c:a1e0::/48) の Tailscale 接続も検知する
+touch "$TMP/connected6"
+wait_state low
+[[ "$REMOTE_IP" == fd7a:115c:a1e0:* ]] || { print -r -- "FAIL: IPv6 の REMOTE_IP=$REMOTE_IP"; exit 1 }
+rm "$TMP/connected6"
 wait_state home
 
 grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼ばれていない"; exit 1 }

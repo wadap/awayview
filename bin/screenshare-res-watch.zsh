@@ -38,12 +38,15 @@ mkdir -p "$STATE_DIR"
 
 log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG" }
 
-# --- IPv4ドット表記の 100.64.0.0/10 判定 ------------------------------
+# --- Tailscale 範囲判定: IPv4 100.64.0.0/10 / IPv6 fd7a:115c:a1e0::/48 ---
 is_tailscale_ip() {
   local ip="$1" o1 rest o2
-  [[ "$ip" == <->.<->.<->.<-> ]] || return 1
-  o1="${ip%%.*}"; rest="${ip#*.}"; o2="${rest%%.*}"
-  [[ "$o1" == "100" ]] && (( o2 >= 64 && o2 <= 127 ))
+  if [[ "$ip" == <->.<->.<->.<-> ]]; then
+    o1="${ip%%.*}"; rest="${ip#*.}"; o2="${rest%%.*}"
+    [[ "$o1" == "100" ]] && (( o2 >= 64 && o2 <= 127 ))
+    return
+  fi
+  [[ "${(L)ip}" == fd7a:115c:a1e0:* ]]
 }
 
 # --- 5900へのESTABLISHED接続にTailscale元があるか ---------------------
@@ -57,7 +60,11 @@ remote_vnc_connected() {
   for name in $names; do
     [[ -z "$name" || "$name" != *'->'* ]] && continue
     foreign="${name##*->}"
-    fip="${foreign%%:*}"
+    if [[ "$foreign" == \[* ]]; then
+      fip="${${foreign#\[}%%\]*}"   # IPv6: [addr]:port 形式
+    else
+      fip="${foreign%%:*}"
+    fi
     is_tailscale_ip "$fip" && { REMOTE_IP="$fip"; return 0 }
   done
   return 1
