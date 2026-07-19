@@ -1,0 +1,10 @@
+# 実際の設定(screen id などマシン固有)はコミットしない
+config.zsh
+/.config/
+
+# ローカル状態・ログ
+*.log
+.local/
+
+# macOS
+.DS_Store
