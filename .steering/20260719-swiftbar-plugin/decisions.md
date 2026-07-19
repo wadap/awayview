@@ -18,3 +18,9 @@
 - **2026-07-19 state ファイルは key=value（zsh source 可能）形式**
   - JSON 等は zsh からのパースが面倒。source 一発で読める形式を優先
   - 書き込みは tmp + mv でアトミック、変化時のみ
+
+- **2026-07-19 テスト容易性のため env 上書きを導入**
+  - `SCREENSHARE_RES_STATE_DIR`（watcher/プラグイン共通）と
+    `SCREENSHARE_RES_LAUNCHCTL`（プラグイン）を追加
+  - lsof / displayplacer は既存の config 変数で差し替え可能なため、
+    スタブによる自動テスト(`make test`)が SwiftBar・実接続なしで回せる

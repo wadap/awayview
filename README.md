@@ -39,6 +39,7 @@ make logs         # watch.log を tail -f
 make reload       # 設定変更後の再読み込み
 make uninstall    # 常駐解除（config/log は残す）
 make check        # zsh 構文チェック
+make test         # スタブによる自動テスト
 ```
 
 動作確認：別マシンから Tailscale 経由で画面共有 → 解像度が下がる → 切断で戻る。
@@ -52,6 +53,24 @@ make check        # zsh 構文チェック
    ホーム解像度をキャッシュ）
 3. リモート接続なし → キャッシュしたホーム配置へ復帰し、以後もホーム配置を追従キャッシュ
 
+## SwiftBar プラグイン（メニューバー表示と手動固定）
+
+[SwiftBar](https://github.com/swiftbar/SwiftBar)（`brew install --cask swiftbar`）
+を入れると、watcher の状態をメニューバーで確認できる:
+
+- 🏠 ホーム解像度 / 📱 低解像度 / 📌 高解像度に固定中 / ⚠️ watcher 停止
+- メニューから「📌 高解像度に固定」⇄「✅ 自動に戻す」を切替（固定は手動解除まで有効）
+- ログを開く / watcher を再起動もメニューから
+
+```sh
+# SwiftBar を一度起動してプラグインフォルダを選んでから
+make swiftbar     # プラグインを symlink 設置
+```
+
+仕組み: watcher が `~/.local/state/screenshare-res/state` に現在状態を書き、
+プラグインはそれを表示するだけ。「固定」は同ディレクトリの `override` フラグ
+ファイルを touch/rm し、watcher が毎ループ参照する。
+
 ## 制限・メモ
 
 - Tailscale 判定は **IPv4 (`100.64.0.0/10`) のみ**。IPv6 (`fd7a:…`) で入る
@@ -63,6 +82,6 @@ make check        # zsh 構文チェック
 
 ## ロードマップ
 
-- [ ] SwiftBar プラグイン化（メニューバー状態表示＋手動オーバーライド）
+- [x] SwiftBar プラグイン化（メニューバー状態表示＋手動オーバーライド）
 - [ ] ネイティブ Swift メニューバーアプリ（`lsof`/`displayplacer` 依存を
       CoreGraphics `CGDisplaySetDisplayMode` 等へ置換）

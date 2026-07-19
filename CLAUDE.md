@@ -14,7 +14,10 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
 - `install.sh` — `install|uninstall|reload|status|logs` サブコマンド。plist を生成し
   `launchctl bootstrap` する
 - `Makefile` — install.sh への薄いフロントドア
-- 状態: `~/.local/state/screenshare-res/`（`home.cmd` キャッシュ、`watch.log`）
+- `swiftbar/screenshare-res.5s.zsh` — SwiftBar プラグイン（状態表示 + 手動固定 UI）
+- `tests/*.test.zsh` — スタブ(lsof/displayplacer/launchctl)による自動テスト。`make test`
+- 状態: `~/.local/state/screenshare-res/`（`home.cmd` キャッシュ、`watch.log`、
+  `state` 現在状態、`override` 手動固定フラグ）
 
 ## 設計上の要点（変更時に壊しやすい所）
 
@@ -31,6 +34,11 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
   `could not find` になりやすいため）。
 - LaunchAgent は **GUI セッション**必須（`launchctl bootstrap gui/$(id -u)`）。
   LaunchDaemon にすると displayplacer がユーザーの表示セッションを掴めない。
+- **watcher ⇄ プラグインの契約はファイル 2 つ**。`state` は watcher だけが書く
+  （値は必ずダブルクォート。source で読むため）。`override` はプラグインだけが
+  touch/rm する。この契約は Swift ネイティブ化(ロードマップ②)でも維持する。
+- テスト用に `SCREENSHARE_RES_STATE_DIR` / `SCREENSHARE_RES_LAUNCHCTL` で
+  状態 dir と launchctl を差し替え可能（本番では未設定のまま）。
 
 ## 開発フロー
 
