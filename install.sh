@@ -6,6 +6,7 @@
 #   reload     bootout → bootstrap
 #   status     稼働状況と直近ログ
 #   logs       watch.log を tail -f
+#   swiftbar   SwiftBar プラグインを symlink 設置
 #
 # 初回 install は「自宅で・画面共有していない状態」で実行すること
 # (ホーム解像度をその場でキャッシュするため)。
@@ -16,6 +17,8 @@ LABEL="com.wadap.screenshare-res"
 SRC_DIR="${0:A:h}"
 SCRIPT_SRC="$SRC_DIR/bin/screenshare-res-watch.zsh"
 CONFIG_SRC="$SRC_DIR/config.example.zsh"
+PLUGIN_SRC="$SRC_DIR/swiftbar/screenshare-res.5s.zsh"
+PLUGIN_NAME="screenshare-res.5s.zsh"
 
 BIN_DIR="$HOME/bin"
 SCRIPT_DST="$BIN_DIR/screenshare-res-watch.zsh"
@@ -78,6 +81,11 @@ PLIST_EOF
 cmd_uninstall() {
   launchctl bootout "$GUI/$LABEL" 2>/dev/null || true
   rm -f "$PLIST" "$SCRIPT_DST"
+  local plugdir
+  plugdir="$(swiftbar_plugdir)"
+  if [[ -n "$plugdir" ]]; then
+    rm -f "$plugdir/$PLUGIN_NAME"
+  fi
   print -r -- "uninstalled (config と logs は $CONFIG_DIR / $STATE_DIR に残置)"
 }
 
@@ -99,11 +107,28 @@ cmd_status() {
 
 cmd_logs() { exec tail -f "$STATE_DIR/watch.log" }
 
+# SwiftBar のプラグインフォルダ(ユーザーが初回起動時に選択)を取得。未設定なら空
+swiftbar_plugdir() {
+  defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null || true
+}
+
+cmd_swiftbar() {
+  [[ -d "/Applications/SwiftBar.app" || -d "$HOME/Applications/SwiftBar.app" ]] \
+    || die "SwiftBar が無い → brew install --cask swiftbar"
+  local plugdir
+  plugdir="$(swiftbar_plugdir)"
+  [[ -n "$plugdir" && -d "$plugdir" ]] \
+    || die "SwiftBar のプラグインフォルダ未設定。SwiftBar を一度起動して選択してください"
+  ln -sfn "$PLUGIN_SRC" "$plugdir/$PLUGIN_NAME"
+  print -r -- "linked: $plugdir/$PLUGIN_NAME -> $PLUGIN_SRC"
+}
+
 case "${1:-}" in
   install)   cmd_install ;;
   uninstall) cmd_uninstall ;;
   reload)    cmd_reload ;;
   status)    cmd_status ;;
   logs)      cmd_logs ;;
-  *) print -r -- "usage: install.sh {install|uninstall|reload|status|logs}"; exit 2 ;;
+  swiftbar)  cmd_swiftbar ;;
+  *) print -r -- "usage: install.sh {install|uninstall|reload|status|logs|swiftbar}"; exit 2 ;;
 esac
