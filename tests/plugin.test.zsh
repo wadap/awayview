@@ -60,4 +60,21 @@ out="$(STUB_LOADED=0 zsh "$PLUGIN")"
 assert_contains "$out" "⚠️"
 assert_not_contains "$out" "📌"
 
+# 6) フラグなしの home → 高固定・低固定の両トグルが並ぶ
+rm "$TMP/state/override"
+print -r -- 'STATE="home"'$'\n''REMOTE_IP=""'$'\n''CHANGED_AT="2026-07-19 10:03:00"' > "$TMP/state/state"
+out="$(STUB_LOADED=1 zsh "$PLUGIN")"
+assert_contains "$out" "高解像度に固定"
+assert_contains "$out" "今すぐ低解像度にする"
+
+# 7) 手動低解像度固定中 → 📱 + 解除メニューのみ
+touch "$TMP/state/force_low"
+print -r -- 'STATE="low_manual"'$'\n''REMOTE_IP=""'$'\n''CHANGED_AT="2026-07-19 10:04:00"' > "$TMP/state/state"
+out="$(STUB_LOADED=1 zsh "$PLUGIN")"
+assert_contains "$out" "📱"
+assert_contains "$out" "低解像度に固定中"
+assert_contains "$out" "自動に戻す"
+assert_not_contains "$out" "高解像度に固定"
+rm "$TMP/state/force_low"
+
 print -r -- "plugin tests: OK"

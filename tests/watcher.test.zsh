@@ -95,5 +95,18 @@ wait_state override
 rm "$TMP/state/override" "$TMP/connected"
 wait_state home
 
+# 7) 手動低解像度トグル: 接続がなくても下がり、解除で戻る
+touch "$TMP/state/force_low"
+wait_state low_manual
+tail -1 "$TMP/applied.log" | grep -q '1600x900' || { print -r -- "FAIL: force_low で低解像度が適用されていない"; exit 1 }
+rm "$TMP/state/force_low"
+wait_state home
+
+# 8) override は force_low より優先される
+touch "$TMP/state/force_low" "$TMP/state/override"
+wait_state override
+rm "$TMP/state/force_low" "$TMP/state/override"
+wait_state home
+
 grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼ばれていない"; exit 1 }
 print -r -- "watcher tests: OK"

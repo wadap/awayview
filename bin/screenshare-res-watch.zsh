@@ -33,6 +33,7 @@ HOME_CACHE="$STATE_DIR/home.cmd"
 LOG="$STATE_DIR/watch.log"
 STATE_FILE="$STATE_DIR/state"
 OVERRIDE_FLAG="$STATE_DIR/override"
+FORCE_LOW_FLAG="$STATE_DIR/force_low"
 mkdir -p "$STATE_DIR"
 
 log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG" }
@@ -71,7 +72,8 @@ capture_home() {
 }
 
 apply_low() {
-  eval "$DISPLAYPLACER \"$LOW_CMD\"" >> "$LOG" 2>&1 && log "-> LOW (Tailscale remote)"
+  local why="${1:-Tailscale remote}"
+  eval "$DISPLAYPLACER \"$LOW_CMD\"" >> "$LOG" 2>&1 && log "-> LOW ($why)"
 }
 
 restore_home() {
@@ -114,6 +116,14 @@ while true; do
     fi
     capture_home
     write_state override
+  elif [[ -e "$FORCE_LOW_FLAG" ]]; then
+    # 手動の低解像度固定: 接続の有無に関わらず下げる
+    remote_vnc_connected || true   # REMOTE_IP を表示用に更新するだけ
+    if [[ "$last" != "low" ]]; then
+      [[ -s "$HOME_CACHE" ]] || capture_home   # 下げる前=ホーム解像度を確保
+      apply_low manual && last="low"
+    fi
+    [[ "$last" == "low" ]] && write_state low_manual
   elif remote_vnc_connected; then
     if [[ "$last" != "low" ]]; then
       [[ -s "$HOME_CACHE" ]] || capture_home   # 下げる前=ホーム解像度を確保
