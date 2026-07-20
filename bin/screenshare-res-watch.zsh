@@ -75,7 +75,10 @@ capture_home() {
   local cmd
   cmd="$($DISPLAYPLACER list 2>/dev/null \
         | awk '/^displayplacer /{sub(/^displayplacer /,""); print; exit}')"
-  [[ -n "$cmd" ]] && print -r -- "$cmd" > "$HOME_CACHE"
+  # ディスプレイのスリープ/無効の瞬間 (enabled:false や res 無し) を
+  # ホームとして誤学習しない。復帰時に enabled:false を適用すると画面が消える
+  [[ -n "$cmd" && "$cmd" == *" res:"* && "$cmd" != *"enabled:false"* ]] || return 0
+  print -r -- "$cmd" > "$HOME_CACHE"
 }
 
 # --- モード遷移フック: config.zsh に on_low() / on_high() があれば呼ぶ ---

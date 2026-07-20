@@ -28,10 +28,15 @@ exit 0
 EOF
 
 # displayplacer スタブ: list はホーム配置1行、適用は applied.log へ記録
+# $STUB_DIR/display_off でディスプレイ無効(スリープ等)の配置を返す
 cat > "$TMP/bin/displayplacer" <<'EOF'
 #!/bin/zsh
 if [[ "${1:-}" == "list" ]]; then
-  print -r -- 'displayplacer "id:HOME res:3008x1692 origin:(0,0) degree:0"'
+  if [[ -e "$STUB_DIR/display_off" ]]; then
+    print -r -- 'displayplacer "id:HOME enabled:false"'
+  else
+    print -r -- 'displayplacer "id:HOME res:3008x1692 origin:(0,0) degree:0"'
+  fi
 else
   [[ -e "$STUB_DIR/fail_apply" ]] && exit 1
   print -r -- "APPLY $*" >> "$STUB_DIR/applied.log"
@@ -145,6 +150,13 @@ print -r -- "3200x1350" > "$TMP/state/res_high"
 sleep 2
 tail -1 "$TMP/applied.log" | grep -q '3200x1350' || { print -r -- "FAIL: res_high が適用されていない"; exit 1 }
 rm "$TMP/state/res_high"
+
+# 12) ディスプレイ無効(スリープ等)の配置はホームとして誤学習しない
+grep -q '3008x1692' "$TMP/state/home.cmd" || { print -r -- "FAIL: 前提: home.cmd が正常でない"; exit 1 }
+touch "$TMP/display_off"
+sleep 2
+grep -q '3008x1692' "$TMP/state/home.cmd" || { print -r -- "FAIL: 無効配置で home.cmd が汚染された"; exit 1 }
+rm "$TMP/display_off"
 
 grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼ばれていない"; exit 1 }
 print -r -- "watcher tests: OK"
