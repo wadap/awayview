@@ -34,7 +34,7 @@
     `STATE="home|low|override"` / `REMOTE_IP="100.x.y.z か空"` / `CHANGED_AT="YYYY-MM-DD HH:MM:SS"`
   - 環境変数 `SCREENSHARE_RES_STATE_DIR`（未設定時は従来の `~/.local/state/screenshare-res`）
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `tests/watcher.test.zsh` を新規作成（実行権限付与）:
 
@@ -125,12 +125,12 @@ grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼�
 print -r -- "watcher tests: OK"
 ```
 
-- [ ] **Step 2: テストが失敗することを確認**
+- [x] **Step 2: テストが失敗することを確認**
 
 Run: `chmod +x tests/watcher.test.zsh && zsh tests/watcher.test.zsh`
 Expected: `FAIL: STATE が home にならない (現在: <none>)` で exit 1（現行 watcher は state ファイルを書かないため）
 
-- [ ] **Step 3: watcher を実装**
+- [x] **Step 3: watcher を実装**
 
 `bin/screenshare-res-watch.zsh` を以下の完全な内容に置き換える（既存からの差分: ヘッダコメント追記、`STATE_DIR` の env 上書き、`STATE_FILE`/`OVERRIDE_FLAG` 追加、`remote_vnc_connected` が `REMOTE_IP` を保存、`restore_home` が理由ラベルを取る、`write_state` 追加、メインループに override 分岐と `write_state` 呼び出し追加。判定・適用・誤学習ガードの順序は不変）:
 
@@ -262,12 +262,12 @@ while true; do
 done
 ```
 
-- [ ] **Step 4: テストが通ることを確認**
+- [x] **Step 4: テストが通ることを確認**
 
 Run: `zsh tests/watcher.test.zsh && make check`
 Expected: `watcher tests: OK` と `syntax ok`
 
-- [ ] **Step 5: コミット**
+- [x] **Step 5: コミット**
 
 ```bash
 rtk git add bin/screenshare-res-watch.zsh tests/watcher.test.zsh
@@ -293,7 +293,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes（Task 1 の契約）: `$STATE_DIR/state`（`STATE`/`REMOTE_IP`/`CHANGED_AT`、値はクォート済み）、`$STATE_DIR/override`、env `SCREENSHARE_RES_STATE_DIR`
 - Produces: `swiftbar/screenshare-res.5s.zsh`（Task 3 が symlink 設置する）。テスト用 env `SCREENSHARE_RES_LAUNCHCTL`（launchctl のパス差し替え、既定 `/bin/launchctl`）
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `tests/plugin.test.zsh` を新規作成（実行権限付与）:
 
@@ -352,12 +352,12 @@ assert_contains "$out" "自動に戻す"
 print -r -- "plugin tests: OK"
 ```
 
-- [ ] **Step 2: テストが失敗することを確認**
+- [x] **Step 2: テストが失敗することを確認**
 
 Run: `chmod +x tests/plugin.test.zsh && zsh tests/plugin.test.zsh`
 Expected: プラグインファイルが存在しないため zsh がエラー（no such file）で exit 非0
 
-- [ ] **Step 3: プラグインを実装**
+- [x] **Step 3: プラグインを実装**
 
 `swiftbar/screenshare-res.5s.zsh` を新規作成:
 
@@ -427,12 +427,12 @@ print -r -- "watcher を再起動 | bash=$LAUNCHCTL param1=kickstart param2=-k p
 
 作成後: `chmod +x swiftbar/screenshare-res.5s.zsh`
 
-- [ ] **Step 4: テストが通ることを確認**
+- [x] **Step 4: テストが通ることを確認**
 
 Run: `zsh tests/plugin.test.zsh && zsh -n swiftbar/screenshare-res.5s.zsh`
 Expected: `plugin tests: OK`
 
-- [ ] **Step 5: コミット**
+- [x] **Step 5: コミット**
 
 ```bash
 rtk git add swiftbar/screenshare-res.5s.zsh tests/plugin.test.zsh
@@ -456,7 +456,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes: `swiftbar/screenshare-res.5s.zsh`（Task 2）
 - Produces: `make swiftbar` / `./install.sh swiftbar` / `make test`
 
-- [ ] **Step 1: install.sh に swiftbar サブコマンドを追加**
+- [x] **Step 1: install.sh に swiftbar サブコマンドを追加**
 
 変数定義部（`CONFIG_SRC=` の直後）に追加:
 
@@ -516,7 +516,7 @@ esac
 
 ファイル先頭のコメント（サブコマンド一覧）にも `swiftbar  SwiftBar プラグインを symlink 設置` の行を追加。
 
-- [ ] **Step 2: Makefile を更新**
+- [x] **Step 2: Makefile を更新**
 
 全体を以下に置き換え:
 
@@ -543,7 +543,7 @@ test: check ## スタブによる自動テスト
 	zsh tests/plugin.test.zsh
 ```
 
-- [ ] **Step 3: 動作確認**
+- [x] **Step 3: 動作確認**
 
 Run: `make test`
 Expected: `syntax ok` → `watcher tests: OK` → `plugin tests: OK`
@@ -551,7 +551,7 @@ Expected: `syntax ok` → `watcher tests: OK` → `plugin tests: OK`
 Run: `./install.sh swiftbar`
 Expected: このマシンは SwiftBar 未インストールなので `error: SwiftBar が無い → brew install --cask swiftbar` で exit 1（案内が正しく出ることの確認）
 
-- [ ] **Step 4: コミット**
+- [x] **Step 4: コミット**
 
 ```bash
 rtk git add install.sh Makefile
@@ -576,7 +576,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes: Task 1〜3 の成果物
 - Produces: なし（ドキュメントのみ）
 
-- [ ] **Step 1: README.md を更新**
+- [x] **Step 1: README.md を更新**
 
 「使い方」セクションの `make check` の行の後に `make test        # スタブによる自動テスト` を追加。
 
@@ -604,7 +604,7 @@ make swiftbar     # プラグインを symlink 設置
 
 「ロードマップ」の SwiftBar 行を `- [x]` に更新。
 
-- [ ] **Step 2: CLAUDE.md を更新**
+- [x] **Step 2: CLAUDE.md を更新**
 
 「ファイル構成」に以下を追加:
 
@@ -630,7 +630,7 @@ make swiftbar     # プラグインを symlink 設置
   状態 dir と launchctl を差し替え可能（本番では未設定のまま）。
 ```
 
-- [ ] **Step 3: decisions.md に追記**
+- [x] **Step 3: decisions.md に追記**
 
 ```markdown
 - **2026-07-19 テスト容易性のため env 上書きを導入**
@@ -640,7 +640,7 @@ make swiftbar     # プラグインを symlink 設置
     スタブによる自動テスト(`make test`)が SwiftBar・実接続なしで回せる
 ```
 
-- [ ] **Step 4: コミット**
+- [x] **Step 4: コミット**
 
 ```bash
 rtk git add README.md CLAUDE.md .steering/
@@ -661,17 +661,17 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 前提: SwiftBar のインストール（`brew install --cask swiftbar`）と初回起動（プラグインフォルダ選択）が必要。マシンへの変更なのでユーザーに確認してから実行すること。
 
-- [ ] **Step 1: watcher を新版に入れ替え**
+- [x] **Step 1: watcher を新版に入れ替え**
 
 Run: `make reload` ではなく `make install`（`~/bin` へのコピーを更新するため）
 Expected: `installed & loaded: com.wadap.screenshare-res`。`make status` で agent: loaded、`tail -2 ~/.local/state/screenshare-res/state` に `STATE="home"` が出る
 
-- [ ] **Step 2: SwiftBar 設置**
+- [x] **Step 2: SwiftBar 設置**
 
 Run: `brew install --cask swiftbar`（ユーザー確認後）→ SwiftBar を起動しプラグインフォルダを選択 → `make swiftbar`
 Expected: メニューバーに 🏠 が出る
 
-- [ ] **Step 3: 手動テストマトリクス**
+- [x] **Step 3: 手動テストマトリクス**
 
 1. メニューから「📌 高解像度に固定」→ アイコンが 📌 になる
 2. 「✅ 自動に戻す」→ 🏠 に戻る
@@ -679,7 +679,7 @@ Expected: メニューバーに 🏠 が出る
 4. （外出時 or 別マシンから）Tailscale 経由で画面共有 → 📱・解像度低下、📌 固定すると復帰、切断で 🏠
 Expected: すべて期待どおり。4 は実接続が必要なので可能なタイミングでよい
 
-- [ ] **Step 4: 結果を記録してコミット**
+- [x] **Step 4: 結果を記録してコミット**
 
 `.steering/20260719-swiftbar-plugin/blockers.md` から解消済み項目を消し、`tasklist.md` のチェックボックスを更新して:
 
