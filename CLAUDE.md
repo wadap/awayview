@@ -35,11 +35,16 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
   `could not find` になりやすいため）。
 - LaunchAgent は **GUI セッション**必須（`launchctl bootstrap gui/$(id -u)`）。
   LaunchDaemon にすると displayplacer がユーザーの表示セッションを掴めない。
-- **watcher ⇄ プラグインの契約はファイル 3 つ**。`state` は watcher だけが書く
-  （値は必ずダブルクォート。source で読むため。値は home/low/low_manual/override）。
-  `override`（高固定）と `force_low`（低固定）はプラグインだけが touch/rm する。
-  優先順位は override > force_low > 自動判定。UI 上は排他（両立時は override 優先）。
+- **watcher ⇄ プラグインの契約は state dir のファイル群**。`state` は watcher
+  だけが書く（値は必ずダブルクォート。source で読むため。値は
+  home/low/low_manual/override）。プラグインだけが書くのは `override`（高固定）/
+  `force_low`（低固定）/ `res_high` / `res_low`（解像度選択、WxH のみ）。
+  優先順位は override > force_low > 自動判定、解像度は res_low > LOW_CMD、
+  res_high > ホーム自動学習（res_high 未設定なら従来どおり自動学習）。
+  watcher は APPLIED_CMD を記憶し、適用中の解像度選択変更を即再適用する。
   この契約は Swift ネイティブ化(ロードマップ②)でも維持する。
+- プラグインのメニュー操作は `bash="$0" param1=mode|res ...` で自分自身を
+  サブコマンド呼び出しする（排他制御をプラグイン内に一元化）。
 - テスト用に `SCREENSHARE_RES_STATE_DIR` / `SCREENSHARE_RES_LAUNCHCTL` で
   状態 dir と launchctl を差し替え可能（本番では未設定のまま）。
 - **モード遷移フック**: config の `on_low()` / `on_high()` を `apply_low` /

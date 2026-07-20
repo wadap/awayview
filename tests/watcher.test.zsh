@@ -129,5 +129,22 @@ wait_state low
 rm "$TMP/connected6"
 wait_state home
 
+# 10) res_low 選択が config の LOW_CMD より優先され、低解像度中の変更は即再適用
+print -r -- "1280x540" > "$TMP/state/res_low"
+touch "$TMP/state/force_low"
+wait_state low_manual
+tail -1 "$TMP/applied.log" | grep -q '1280x540' || { print -r -- "FAIL: res_low が適用されていない"; exit 1 }
+print -r -- "960x540" > "$TMP/state/res_low"
+sleep 2
+tail -1 "$TMP/applied.log" | grep -q '960x540' || { print -r -- "FAIL: res_low 変更が再適用されていない"; exit 1 }
+rm "$TMP/state/force_low" "$TMP/state/res_low"
+wait_state home
+
+# 11) res_high 明示指定はホーム状態でも即適用され、自動学習より優先される
+print -r -- "3200x1350" > "$TMP/state/res_high"
+sleep 2
+tail -1 "$TMP/applied.log" | grep -q '3200x1350' || { print -r -- "FAIL: res_high が適用されていない"; exit 1 }
+rm "$TMP/state/res_high"
+
 grep -q 'APPLY' "$TMP/applied.log" || { print -r -- "FAIL: displayplacer が呼ばれていない"; exit 1 }
 print -r -- "watcher tests: OK"

@@ -34,6 +34,8 @@ LOG="$STATE_DIR/watch.log"
 STATE_FILE="$STATE_DIR/state"
 OVERRIDE_FLAG="$STATE_DIR/override"
 FORCE_LOW_FLAG="$STATE_DIR/force_low"
+RES_LOW_FILE="$STATE_DIR/res_low"     # プラグインで選んだ低解像度 (WxH)。無ければ LOW_CMD
+RES_HIGH_FILE="$STATE_DIR/res_high"   # プラグインで選んだ高解像度 (WxH)。無ければ自動学習
 mkdir -p "$STATE_DIR"
 
 log() { print -r -- "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG" }
@@ -84,17 +86,53 @@ run_hook() {
   "$hook" >> "$LOG" 2>&1 || log "!! hook $hook failed"
 }
 
+# --- 解像度選択 (プラグインが書く WxH ファイル) から引数を組み立てる ---
+# hz/color_depth は指定しない方針。scaling は HiDPI 固定
+res_cmd() { print -r -- "id:${SCREEN_ID} res:${1} scaling:on origin:(0,0) degree:0" }
+
+current_low_cmd() {   # res_low 選択 > config の LOW_CMD
+  local res=""
+  [[ -s "$RES_LOW_FILE" ]] && res="$(<"$RES_LOW_FILE")"
+  if [[ -n "$res" ]]; then res_cmd "$res"; else print -r -- "$LOW_CMD"; fi
+}
+
+current_high_cmd() {  # res_high 明示指定のときだけ非空。未指定なら自動学習に任せる
+  local res=""
+  [[ -s "$RES_HIGH_FILE" ]] && res="$(<"$RES_HIGH_FILE")"
+  [[ -n "$res" ]] && res_cmd "$res"
+  return 0
+}
+
+# 最後に適用したコマンド。適用中の解像度選択変更を検出して再適用するために使う
+APPLIED_CMD=""
+
 apply_low() {
-  local why="${1:-Tailscale remote}"
-  eval "$DISPLAYPLACER \"$LOW_CMD\"" >> "$LOG" 2>&1 || return 1
+  local why="${1:-Tailscale remote}" cmd
+  cmd="$(current_low_cmd)"
+  eval "$DISPLAYPLACER \"$cmd\"" >> "$LOG" 2>&1 || return 1
+  APPLIED_CMD="$cmd"
   log "-> LOW ($why)"
   run_hook on_low
 }
 
 restore_home() {
-  local why="${1:-restored}"
+  local why="${1:-restored}" cmd
+  cmd="$(current_high_cmd)"
+  if [[ -n "$cmd" ]]; then
+    # 明示指定された高解像度を適用
+    if eval "$DISPLAYPLACER \"$cmd\"" >> "$LOG" 2>&1; then
+      APPLIED_CMD="$cmd"
+      log "-> HIGH ($why)"
+      run_hook on_high
+      return 0
+    fi
+    log "!! restore failed ($why), will retry"
+    return 1
+  fi
+  # 従来どおり自動学習したホーム配置へ復帰
   [[ -s "$HOME_CACHE" ]] || { log "!! no home cache, skip restore"; return 2 }
   if eval "$DISPLAYPLACER $(cat "$HOME_CACHE")" >> "$LOG" 2>&1; then
+    APPLIED_CMD="$(<"$HOME_CACHE")"
     log "-> HIGH ($why)"
     run_hook on_high
   else
@@ -130,6 +168,10 @@ while true; do
       if (( rc == 1 )); then sleep $POLL_INTERVAL; continue; fi
       last="high"
     fi
+    hcmd="$(current_high_cmd)"
+    if [[ -n "$hcmd" && "$hcmd" != "$APPLIED_CMD" ]]; then
+      restore_home "override, res change" || true   # 高解像度の選択変更を即反映
+    fi
     capture_home
     write_state override
   elif [[ -e "$FORCE_LOW_FLAG" ]]; then
@@ -138,6 +180,8 @@ while true; do
     if [[ "$last" != "low" ]]; then
       [[ -s "$HOME_CACHE" ]] || capture_home   # 下げる前=ホーム解像度を確保
       apply_low manual && last="low"
+    elif [[ "$(current_low_cmd)" != "$APPLIED_CMD" ]]; then
+      apply_low "manual, res change" || true   # 低解像度の選択変更を即反映
     fi
     [[ "$last" == "low" ]] && write_state low_manual
   elif remote_vnc_connected; then
@@ -145,6 +189,8 @@ while true; do
       [[ -s "$HOME_CACHE" ]] || capture_home   # 下げる前=ホーム解像度を確保
       sleep $SETTLE_DELAY
       remote_vnc_connected && { apply_low; last="low" }
+    elif [[ "$(current_low_cmd)" != "$APPLIED_CMD" ]]; then
+      apply_low "res change" || true           # 低解像度の選択変更を即反映
     fi
     [[ "$last" == "low" ]] && write_state low
   else
@@ -153,6 +199,10 @@ while true; do
       rc=$?
       if (( rc == 1 )); then sleep $POLL_INTERVAL; continue; fi
       last="high"
+    fi
+    hcmd="$(current_high_cmd)"
+    if [[ -n "$hcmd" && "$hcmd" != "$APPLIED_CMD" ]]; then
+      restore_home "res change" || true        # 高解像度の選択変更を即反映
     fi
     capture_home
     write_state home
