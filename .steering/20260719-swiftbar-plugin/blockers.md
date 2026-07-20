@@ -1,5 +1,7 @@
 # blockers — SwiftBar プラグイン化
 
-- SwiftBar 未インストール（このマシンに /Applications/SwiftBar.app なし）。
-  実機確認の前に `brew install --cask swiftbar` と初回起動（プラグイン
-  フォルダ選択）が必要。実装自体はターミナル実行で検証できるため着手可能
+（解消済み・ブロッカーなし）
+
+- ~~SwiftBar 未インストール~~ → 2026-07-19 brew で導入、プラグイン設置済み
+- ~~Tailscale 実接続での自動検知が未検証~~ → 2026-07-20 実接続で検証完了。
+  真因は lsof の権限問題で netstat へ置換（decisions.md 参照）
