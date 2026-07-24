@@ -81,12 +81,12 @@ final class StateMachine {
 
 **Files:** Create `StateStore.swift`, `Tests/.../StateStoreTests.swift`
 
-- [ ] state 書き込み: `STATE="..."` 形式 3 行・原子的・変化時のみ（tmp dir でテスト:
+- [x] state 書き込み: `STATE="..."` 形式 3 行・原子的・変化時のみ（tmp dir でテスト:
   フォーマット完全一致を zsh 版出力と文字列比較）
-- [ ] フラグ/解像度ファイルの read/write（FlagReading 実装 + メニューからの排他切替
+- [x] フラグ/解像度ファイルの read/write（FlagReading 実装 + メニューからの排他切替
   `setMode(auto|high|low)` と `setRes(low:/high:)`）
-- [ ] watch.log への追記ロガー（既存フォーマット `YYYY-MM-DD HH:MM:SS msg`）
-- [ ] コミット
+- [x] watch.log への追記ロガー（既存フォーマット `YYYY-MM-DD HH:MM:SS msg`）
+- [x] コミット
 
 ### Task 5: DisplayController 本実装 + 実機検証
 
