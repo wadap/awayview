@@ -62,10 +62,10 @@ assert_contains "$out" "高解像度: 自動学習"
 assert_contains "$out" "低解像度: config 設定"
 assert_contains "$out" "-- 2560x1080"
 
-# 3) low 状態 + 接続元 IP → 📱
+# 3) low 状態 + 接続元 IP → 💻
 print -r -- 'STATE="low"'$'\n''REMOTE_IP="100.99.1.2"'$'\n''CHANGED_AT="2026-07-20 10:01:00"' > "$TMP/state/state"
 out="$(STUB_LOADED=1 zsh "$PLUGIN")"
-assert_contains "$out" "📱"
+assert_contains "$out" "💻"
 assert_contains "$out" "接続: 100.99.1.2"
 
 # 4) mode サブコマンドは排他でフラグを切り替える
@@ -88,11 +88,11 @@ out="$(STUB_LOADED=0 zsh "$PLUGIN")"
 assert_contains "$out" "⚠️"
 assert_not_contains "$out" "📌"
 
-# 7) 手動低解像度 → 📱、低解像度（外出）に ✓
+# 7) 手動低解像度 → 💻、低解像度（外出）に ✓
 zsh "$PLUGIN" mode low
 print -r -- 'STATE="low_manual"'$'\n''REMOTE_IP=""'$'\n''CHANGED_AT="2026-07-20 10:03:00"' > "$TMP/state/state"
 out="$(STUB_LOADED=1 zsh "$PLUGIN")"
-assert_contains "$out" "📱"
+assert_contains "$out" "💻"
 assert_contains "$out" "低解像度に固定中"
 assert_checked "$out" "低解像度（外出）"
 zsh "$PLUGIN" mode auto

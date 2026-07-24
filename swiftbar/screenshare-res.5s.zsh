@@ -97,8 +97,8 @@ res_options() {
 }
 
 case "$STATE" in
-  low)        icon="📱"; label="低解像度" ;;
-  low_manual) icon="📱"; label="低解像度に固定中" ;;
+  low)        icon="💻"; label="低解像度" ;;
+  low_manual) icon="💻"; label="低解像度に固定中" ;;
   override)   icon="📌"; label="高解像度に固定中" ;;
   home)       icon="🏠"; label="ホーム解像度" ;;
   *)          icon="⚠️"; label="状態不明 (state 未生成)" ;;
