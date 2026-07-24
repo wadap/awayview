@@ -8,3 +8,7 @@ config.zsh
 
 # macOS
 .DS_Store
+
+# Swift build artifacts
+native/.build/
+native/dist/

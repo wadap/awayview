@@ -24,15 +24,15 @@
 
 **Files:** Create `native/Package.swift`, `native/Sources/ScreenshareRes/main.swift`, `native/Sources/ScreenshareRes/DisplayController.swift`（列挙部のみ）
 
-- [ ] Package.swift: executable `ScreenshareRes`, platform .macOS(.v13)
-- [ ] `--list-modes` CLI フラグ: 全ディスプレイの UUID / 現在モードと、
+- [x] Package.swift: executable `ScreenshareRes`, platform .macOS(.v13)
+- [x] `--list-modes` CLI フラグ: 全ディスプレイの UUID / 現在モードと、
   `CGDisplayCopyAllDisplayModes` + `kCGDisplayShowDuplicateLowResolutionModes: true`
   のポイント解像度一覧（width x height, isHiDPI, refreshRate）を stdout に出力
-- [ ] 実機で `swift run ScreenshareRes --list-modes` を実行し、legacy の
+- [x] 実機で `swift run ScreenshareRes --list-modes` を実行し、legacy の
   `~/.local/state/screenshare-res/res_options`（41 モード）と突き合わせる。
   **ゲート: 1920x810 / 2560x1080 / 1600x1200 等の scaled モードが列挙に含まれること**。
   結果（一致/差分）を blockers.md に記録
-- [ ] コミット
+- [x] コミット
 
 ### Task 2: StateMachine + シナリオテスト移植
 
