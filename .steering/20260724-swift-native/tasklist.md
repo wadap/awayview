@@ -129,7 +129,7 @@ final class StateMachine {
 
 ### Task 8: 実機切替 + 手動テストマトリクス（要ユーザー協力）
 
-- [ ] `make native-install` で切替（ユーザー確認後）
-- [ ] マトリクス: 🏠 表示 / モード 3 切替 / 解像度ピッカー / リモート接続で自動 💻 /
+- [x] `make native-install` で切替（ユーザー確認後）
+- [x] マトリクス: 🏠 表示 / モード 3 切替 / 解像度ピッカー / リモート接続で自動 💻 /
   切断で 🏠 / スリープ後の復帰正常
-- [ ] 結果を blockers.md / tasklist.md に記録し、progress ledger 更新、マージ判断
+- [x] 結果を blockers.md / tasklist.md に記録し、progress ledger 更新、マージ判断
