@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 
@@ -67,5 +68,17 @@ if args.contains("--capture-home") {
     exit(1)
 }
 
-print("usage: ScreenshareRes --list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore")
-exit(2)
+if args.contains("--help") || args.contains("-h") {
+    print("usage: ScreenshareRes [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
+    print("引数なしで起動するとメニューバーアプリとして常駐する")
+    exit(0)
+}
+
+// 引数なし: メニューバーアプリとして常駐
+let stateDir = ProcessInfo.processInfo.environment["SCREENSHARE_RES_STATE_DIR"]
+    .map { URL(fileURLWithPath: $0) }
+let app = NSApplication.shared
+let controller = AppController(stateDirectory: stateDir)
+app.delegate = controller
+app.setActivationPolicy(.accessory)   // Dock に出さない (メニューバーのみ)
+app.run()

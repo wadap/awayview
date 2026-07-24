@@ -104,15 +104,15 @@ final class StateMachine {
 
 **Files:** Create `MenuController.swift`, `Hooks.swift`, main.swift を App 化
 
-- [ ] NSStatusItem。SwiftBar 版と同一のメニュー構成（状態/接続表示、3 モードラジオ
+- [x] NSStatusItem。SwiftBar 版と同一のメニュー構成（状態/接続表示、3 モードラジオ
   ✓、解像度サブメニュー〔高: 自動学習+一覧 / 低: 一覧〕、ログを開く、
   ログイン時に起動トグル〔SMAppService〕、終了）
-- [ ] DispatchSourceTimer 3 秒 tick で StateMachine 駆動 + メニュー更新
-- [ ] Hooks: config.zsh に on_low/on_high があれば
+- [x] DispatchSourceTimer 3 秒 tick で StateMachine 駆動 + メニュー更新
+- [x] Hooks: config.zsh に on_low/on_high があれば
   `zsh -c 'source <config> && on_low'` を遷移成功後に非同期実行
-- [ ] `swift run` で起動しメニュー操作の手動確認（モード切替がフラグファイルに
+- [x] `swift run` で起動しメニュー操作の手動確認（モード切替がフラグファイルに
   反映され legacy SwiftBar 表示とも整合することを確認）
-- [ ] コミット
+- [x] コミット
 
 ### Task 7: .app バンドル + Makefile + ドキュメント
 
