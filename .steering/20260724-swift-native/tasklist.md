@@ -60,10 +60,10 @@ final class StateMachine {
     func tick()
 }
 ```
-- [ ] zsh 版 tests/watcher.test.zsh の 12 シナリオを XCTest に移植（モック注入で
+- [x] zsh 版 tests/watcher.test.zsh の 12 シナリオを XCTest に移植（モック注入で
   tick を進める。SETTLE は「二段階遷移」= 接続検知の次 tick で再確認）
-- [ ] 追加シナリオ: 二段階 SETTLE で「1 tick だけの瞬間接続では下げない」
-- [ ] RED → 実装 → GREEN → コミット
+- [x] 追加シナリオ: 二段階 SETTLE で「1 tick だけの瞬間接続では下げない」
+- [x] RED → 実装 → GREEN → コミット
 
 ### Task 3: Tailscale 判定 + ConnectionMonitor (sysctl)
 
