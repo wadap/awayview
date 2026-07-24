@@ -36,5 +36,36 @@ if args.contains("--list-connections") {
     exit(0)
 }
 
-print("usage: ScreenshareRes --list-modes | --list-connections")
+// 実機検証用: ホーム学習 → 低解像度適用 → 復帰の往復を CLI で叩ける
+if let i = args.firstIndex(of: "--apply"), i + 1 < args.count {
+    // 検証専用: capture はしない (低解像度中に実行してもホームを誤学習しない)
+    let dc = RealDisplayController()
+    dc.log = { print($0) }
+    let ok = dc.applyLow(args[i + 1] == "default" ? nil : args[i + 1])
+    print(ok ? "applied" : "apply FAILED")
+    exit(ok ? 0 : 1)
+}
+
+if args.contains("--restore") {
+    let dc = RealDisplayController()
+    dc.log = { print($0) }
+    switch dc.restoreHome(explicit: nil) {
+    case .ok: print("restored"); exit(0)
+    case .noCache: print("no home cache"); exit(1)
+    case .failed: print("restore FAILED"); exit(1)
+    }
+}
+
+if args.contains("--capture-home") {
+    let dc = RealDisplayController()
+    dc.captureHome(onlyIfMissing: false)
+    if let home = dc.storedHome() {
+        print("home: \(home.width)x\(home.height)\(home.isHiDPI ? " HiDPI" : "")")
+        exit(0)
+    }
+    print("capture FAILED (display inactive?)")
+    exit(1)
+}
+
+print("usage: ScreenshareRes --list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore")
 exit(2)

@@ -92,13 +92,13 @@ final class StateMachine {
 
 **Files:** Modify `DisplayController.swift`
 
-- [ ] 対象選出（外部優先→UUID を UserDefaults へ）・モード検索（WxH 文字列→
+- [x] 対象選出（外部優先→UUID を UserDefaults へ）・モード検索（WxH 文字列→
   CGDisplayMode、HiDPI 優先）・適用（CGBeginDisplayConfiguration→Complete）
-- [ ] capture: CGDisplayCopyDisplayMode + `IsActive/IsOnline/!IsAsleep` ガード。
+- [x] capture: CGDisplayCopyDisplayMode + `IsActive/IsOnline/!IsAsleep` ガード。
   home モードは UserDefaults に (UUID, WxH, isHiDPI) で永続化
-- [ ] 実機検証スクリプト: `swift run ScreenshareRes --apply 1920x810` →
+- [x] 実機検証スクリプト: `swift run ScreenshareRes --apply 1920x810` →
   `--restore` で往復し解像度が実際に変わることを確認（displayplacer list で裏取り）
-- [ ] コミット
+- [x] コミット
 
 ### Task 6: MenuController + App 組み立て
 
