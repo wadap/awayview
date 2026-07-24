@@ -82,7 +82,9 @@ final class RealDisplayController: DisplayControlling {
     private let defaults: UserDefaults
     var log: (String) -> Void = { _ in }
 
-    init(defaults: UserDefaults = UserDefaults(suiteName: RealDisplayController.suiteName)!) {
+    // suiteName が自 bundle id と同一のとき UserDefaults(suiteName:) は nil を
+    // 返す (.app 実行時)。その場合 .standard が同じドメインを指すのでフォールバック
+    init(defaults: UserDefaults = UserDefaults(suiteName: RealDisplayController.suiteName) ?? .standard) {
         self.defaults = defaults
     }
 
