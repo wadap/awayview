@@ -69,13 +69,13 @@ final class StateMachine {
 
 **Files:** Create `ConnectionMonitor.swift`, `Tests/.../TailscaleRangeTests.swift`
 
-- [ ] `isTailscaleIP(_:) -> Bool`（IPv4 100.64/10, IPv6 fd7a:115c:a1e0::/48）を
+- [x] `isTailscaleIP(_:) -> Bool`（IPv4 100.64/10, IPv6 fd7a:115c:a1e0::/48）を
   pure function として実装 + 境界値テスト（100.63.x / 100.128.x / fd7a:115c:a1e1: 等）
-- [ ] sysctl `net.inet.tcp.pcblist_n` を歩いて ESTABLISHED × local:5900 の foreign IP を
+- [x] sysctl `net.inet.tcp.pcblist_n` を歩いて ESTABLISHED × local:5900 の foreign IP を
   列挙（xinpgen ヘッダ→ xtcpcb_n。INP_IPV4/INP_IPV6 両対応）
-- [ ] smoke テスト: 実バッファでクラッシュせず配列を返す。実機で SSH 接続が
+- [x] smoke テスト: 実バッファでクラッシュせず配列を返す。実機で SSH 接続が
   5900 に現れない（port filter）ことを確認
-- [ ] コミット
+- [x] コミット
 
 ### Task 4: StateStore（ファイル契約）
 

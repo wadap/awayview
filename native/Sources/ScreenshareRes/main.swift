@@ -24,5 +24,17 @@ if args.contains("--list-modes") {
     exit(0)
 }
 
-print("usage: ScreenshareRes --list-modes")
+if args.contains("--list-connections") {
+    let monitor = ConnectionMonitor()
+    let ips = monitor.establishedForeignIPs()
+    print("port 5900 ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
+    if let ts = monitor.tailscaleRemoteIP() {
+        print("tailscale remote: \(ts)")
+    } else {
+        print("tailscale remote: (none)")
+    }
+    exit(0)
+}
+
+print("usage: ScreenshareRes --list-modes | --list-connections")
 exit(2)
