@@ -79,16 +79,31 @@ make swiftbar     # プラグインを symlink 設置
 優先順位は `override` > `force_low` > 自動判定、解像度は
 `res_low` > `LOW_CMD`、`res_high` > ホーム自動学習。適用中の解像度変更は即再適用。
 
-## モード遷移フック（自宅⇄モバイルで他アプリも切替）
+## モード遷移フック（自宅⇄モバイルで他アプリ・デーモンも切替）
 
-config.zsh に `on_low()` / `on_high()` 関数を定義すると、低解像度への切替後 /
-ホーム復帰後に呼ばれる（手動トグル・自動検知どちらの経路でも発火）。
+低解像度への切替後（= 外出利用）/ ホーム復帰後（= 自宅利用）にフックが呼ばれる
+（手動トグル・自動検知どちらの経路でも発火）。連動を増やす方法は 2 つ:
+
+**1. hooks ディレクトリ（推奨・ネイティブ版）** —
+`~/.config/screenshare-res/hooks/on_low.d/` と `on_high.d/` に置いた
+実行可能ファイルが名前順に全実行される。追加＝ファイルを置く、削除＝消すだけ。
 例: モバイル利用中はスクロール反転（Scroll Reverser）を止める:
 
-```zsh
-on_low()  { osascript -e 'tell application "Scroll Reverser" to quit' }
-on_high() { open -ga "Scroll Reverser" }
+```sh
+mkdir -p ~/.config/screenshare-res/hooks/{on_low.d,on_high.d}
+cat > ~/.config/screenshare-res/hooks/on_low.d/scroll-reverser <<'EOF'
+#!/bin/zsh
+osascript -e 'tell application "Scroll Reverser" to quit'
+EOF
+cat > ~/.config/screenshare-res/hooks/on_high.d/scroll-reverser <<'EOF'
+#!/bin/zsh
+open -ga "Scroll Reverser"
+EOF
+chmod +x ~/.config/screenshare-res/hooks/{on_low.d,on_high.d}/scroll-reverser
 ```
+
+**2. config.zsh の関数（legacy 互換）** — `on_low()` / `on_high()` 関数を
+定義すると zsh 経由で呼ばれる（zsh 版・ネイティブ版とも対応）。
 
 フックの失敗は watcher 本体の動作に影響しない（ログに `!! hook ... failed`）。
 
