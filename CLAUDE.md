@@ -16,6 +16,10 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
 - `Makefile` — install.sh への薄いフロントドア
 - `swiftbar/screenshare-res.5s.zsh` — SwiftBar プラグイン（状態表示 + 手動固定 UI）
 - `tests/*.test.zsh` — スタブ(netstat/displayplacer/launchctl)による自動テスト。`make test`
+- `native/` — **Swift ネイティブ版**（メニューバーアプリ 1 本に watcher を内蔵。
+  接続監視 = sysctl の C シム、表示制御 = CoreGraphics 直叩き、UI = NSStatusItem。
+  `make native-build` / `native-install`。詳細は `.steering/20260724-swift-native/`）
+  zsh 版は legacy として残置。両方を同時に動かさないこと（解像度を取り合う）
 - 状態: `~/.local/state/screenshare-res/`（`home.cmd` キャッシュ、`watch.log`、
   `state` 現在状態、`override` 高解像度固定フラグ、`force_low` 低解像度固定フラグ）
 
@@ -54,6 +58,13 @@ Claude Code 用のプロジェクト文脈。設計意図と落とし穴を先�
 - **モード遷移フック**: config の `on_low()` / `on_high()` を `apply_low` /
   `restore_home` の*成功後*に呼ぶ（`run_hook`）。失敗しても watcher は止めない。
   復帰失敗時(rc=1)はフックも発火しない — 実際に解像度が変わったときだけ発火。
+
+- **native の C シム (pcblist_n) は XNU 非公開 ABI の写経**。構造体は
+  `#pragma pack(4)` 必須・ブロックは 8 バイト境界に切り上げて歩く。
+  どちらを欠いても静かに空振りする（実機で発生済み）。
+- native の `swift test` は XCTest が CLT に無いため
+  `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` が必要
+  （Makefile が設定済み。直接叩くときだけ注意）。
 
 ## 開発フロー
 

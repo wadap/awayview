@@ -118,14 +118,14 @@ final class StateMachine {
 
 **Files:** Modify `Makefile`, `README.md`, `CLAUDE.md`; Create `native/Info.plist`
 
-- [ ] `make native-build`: swift build -c release → `native/dist/ScreenshareRes.app`
+- [x] `make native-build`: swift build -c release → `native/dist/ScreenshareRes.app`
   （Contents/MacOS/ + Info.plist: LSUIElement=true）→ `codesign --force --sign -`
-- [ ] `make native-install`: legacy bootout + SwiftBar symlink 撤去 → ~/Applications
+- [x] `make native-install`: legacy bootout + SwiftBar symlink 撤去 → ~/Applications
   へ cp → open。`make native-uninstall` も追加
-- [ ] `make test` に `cd native && swift test` を追加
-- [ ] README: ネイティブ版セクション（セットアップ・切替・切戻し手順）、
+- [x] `make test` に `cd native && swift test` を追加
+- [x] README: ネイティブ版セクション（セットアップ・切替・切戻し手順）、
   CLAUDE.md: 構成・設計要点の更新
-- [ ] コミット
+- [x] コミット
 
 ### Task 8: 実機切替 + 手動テストマトリクス（要ユーザー協力）
 

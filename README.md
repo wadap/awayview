@@ -92,6 +92,28 @@ on_high() { open -ga "Scroll Reverser" }
 
 フックの失敗は watcher 本体の動作に影響しない（ログに `!! hook ... failed`）。
 
+## ネイティブ版（Swift メニューバーアプリ）
+
+zsh watcher + SwiftBar + displayplacer を単一の Swift アプリに置き換えたもの。
+接続監視は sysctl、解像度制御は CoreGraphics 直叩きで**外部依存ゼロ**
+（displayplacer / SwiftBar 不要。ビルドに Xcode が必要なだけ）。
+
+```sh
+make native-build      # native/dist/ScreenshareRes.app を組み立て (ad-hoc 署名)
+make native-install    # legacy を停止して ~/Applications へ配置・起動
+make native-uninstall  # ネイティブ版を終了・削除
+# zsh 版へ戻す: make native-uninstall && make install && make swiftbar
+```
+
+- メニュー構成・ファイル契約（state/override/force_low/res_high/res_low）は
+  legacy と同一。`config.zsh` は不要（対象ディスプレイ自動検出・解像度は
+  メニュー選択・ホームは自動学習）。`on_low`/`on_high` フックは config.zsh に
+  定義があれば互換実行される
+- 低解像度が未選択のときの既定はホームの半分（同アスペクト・HiDPI 優先）
+- 常駐はメニューの「ログイン時に起動」（SMAppService）で設定
+- ホーム学習は UserDefaults（`com.wadap.screenshare-res.native`）に保持。
+  リセットは `defaults delete com.wadap.screenshare-res.native`
+
 ## 制限・メモ
 
 - Tailscale 判定は **IPv4 (`100.64.0.0/10`) と IPv6 (`fd7a:115c:a1e0::/48`)**。
@@ -105,5 +127,5 @@ on_high() { open -ga "Scroll Reverser" }
 ## ロードマップ
 
 - [x] SwiftBar プラグイン化（メニューバー状態表示＋手動オーバーライド）
-- [ ] ネイティブ Swift メニューバーアプリ（`netstat`/`displayplacer` 依存を
-      CoreGraphics `CGDisplaySetDisplayMode` 等へ置換）
+- [x] ネイティブ Swift メニューバーアプリ（`netstat`/`displayplacer` 依存を
+      sysctl / CoreGraphics 直叩きへ置換）
