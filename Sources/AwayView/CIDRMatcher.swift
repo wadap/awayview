@@ -21,7 +21,7 @@ struct CIDRMatcher {
 
     /// "100.64.0.0/10" → (ネットワークアドレス bytes, prefix 長)。不正なら nil
     static func parseCIDR(_ s: String) -> ([UInt8], Int)? {
-        let parts = s.split(separator: "/")
+        let parts = s.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 2, let prefix = Int(parts[1]),
               let bytes = parseIP(String(parts[0])),
               (0...bytes.count * 8).contains(prefix) else { return nil }

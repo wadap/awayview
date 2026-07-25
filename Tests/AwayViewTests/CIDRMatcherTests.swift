@@ -55,5 +55,9 @@ final class CIDRMatcherTests: XCTestCase {
         XCTAssertNil(CIDRMatcher.parseCIDR("100.64.0.0/33"))    // v4 上限超え
         XCTAssertNil(CIDRMatcher.parseCIDR("fd7a::/129"))       // v6 上限超え
         XCTAssertNil(CIDRMatcher.parseCIDR("hello/8"))
+        XCTAssertNil(CIDRMatcher.parseCIDR("100.64.0.0//10"))   // 二重スラッシュ
+        XCTAssertNil(CIDRMatcher.parseCIDR("100.64.0.0/10/"))   // 末尾スラッシュ
+        XCTAssertNil(CIDRMatcher.parseCIDR("100.64.0.0/"))      // prefix 空
+        XCTAssertNil(CIDRMatcher.parseCIDR("/10"))              // アドレス空
     }
 }
