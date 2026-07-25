@@ -77,7 +77,7 @@ enum DisplayController {
 // ---------------------------------------------------------------------------
 
 final class RealDisplayController: DisplayControlling {
-    static let suiteName = "com.wadap.screenshare-res.native"
+    static let suiteName = "com.wadap.AwayView"
 
     private let defaults: UserDefaults
     var log: (String) -> Void = { _ in }

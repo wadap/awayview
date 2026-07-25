@@ -69,7 +69,7 @@ if args.contains("--capture-home") {
 }
 
 if args.contains("--help") || args.contains("-h") {
-    print("usage: ScreenshareRes [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
+    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
     print("引数なしで起動するとメニューバーアプリとして常駐する")
     exit(0)
 }

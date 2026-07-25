@@ -1,5 +1,5 @@
 import XCTest
-@testable import ScreenshareRes
+@testable import AwayView
 
 final class TailscaleRangeTests: XCTestCase {
     func testIPv4InRange() {

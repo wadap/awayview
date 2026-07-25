@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>ScreenshareRes</string>
+	<string>AwayView</string>
 	<key>CFBundleDisplayName</key>
-	<string>ScreenshareRes</string>
+	<string>AwayView</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.wadap.screenshare-res.native</string>
+	<string>com.wadap.AwayView</string>
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleExecutable</key>
-	<string>ScreenshareRes</string>
+	<string>AwayView</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>LSMinimumSystemVersion</key>
@@ -21,6 +21,6 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>screenshare-res (local build)</string>
+	<string>AwayView</string>
 </dict>
 </plist>

@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ScreenshareRes",
+    name: "AwayView",
     platforms: [.macOS(.v13)],
     targets: [
         .target(
@@ -10,18 +10,18 @@ let package = Package(
             path: "Sources/CShim"
         ),
         .executableTarget(
-            name: "ScreenshareRes",
+            name: "AwayView",
             dependencies: ["CShim"],
-            path: "Sources/ScreenshareRes",
+            path: "Sources/AwayView",
             linkerSettings: [
                 .linkedFramework("ColorSync"),  // CGDisplayCreateUUIDFromDisplayID の実体
                 .linkedFramework("AppKit"),
             ]
         ),
         .testTarget(
-            name: "ScreenshareResTests",
-            dependencies: ["ScreenshareRes"],
-            path: "Tests/ScreenshareResTests"
+            name: "AwayViewTests",
+            dependencies: ["AwayView"],
+            path: "Tests/AwayViewTests"
         ),
     ]
 )

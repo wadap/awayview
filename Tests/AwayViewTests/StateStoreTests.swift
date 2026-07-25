@@ -1,5 +1,5 @@
 import XCTest
-@testable import ScreenshareRes
+@testable import AwayView
 
 final class StateStoreTests: XCTestCase {
     var dir: URL!

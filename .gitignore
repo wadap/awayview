@@ -10,5 +10,5 @@ config.zsh
 .DS_Store
 
 # Swift build artifacts
-native/.build/
-native/dist/
+.build/
+dist/
