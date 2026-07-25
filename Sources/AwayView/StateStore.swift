@@ -6,10 +6,6 @@ import Foundation
 //   res_high / res_low … 解像度選択 (WxH のみ)
 //   watch.log … 稼働ログ (YYYY-MM-DD HH:MM:SS msg)
 
-enum WatchMode {
-    case auto, high, low
-}
-
 final class StateStore: FlagReading {
     let directory: URL
     private let now: () -> Date
