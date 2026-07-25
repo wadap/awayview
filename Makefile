@@ -11,8 +11,7 @@ build: ## .app バンドルを組み立てて ad-hoc 署名
 	mkdir -p $(APP)/Contents/MacOS $(APP)/Contents/Resources
 	cp .build/release/AwayView $(APP)/Contents/MacOS/
 	cp Info.plist $(APP)/Contents/
-	@if [ -d .build/release/AwayView_AwayView.bundle ]; then \
-	  cp -R .build/release/AwayView_AwayView.bundle $(APP)/Contents/Resources/; fi
+	cp -R .build/release/AwayView_AwayView.bundle $(APP)/Contents/Resources/
 	codesign --force --sign - $(APP)
 	@echo "built: $(APP)"
 
@@ -32,4 +31,4 @@ check: ## 型チェック (debug build)
 	swift build
 
 test:
-	DEVELOPER_DIR=$(DEVELOPER_DIR) swift test 2>&1 | tail -1
+	DEVELOPER_DIR=$(DEVELOPER_DIR) bash -o pipefail -c 'swift test 2>&1 | grep -E "Executed|error:"'
