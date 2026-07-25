@@ -17,3 +17,14 @@
 "menu.open_log" = "ログを開く";
 "menu.settings" = "設定…";
 "menu.quit" = "終了";
+
+/* settings */
+"settings.title" = "AwayView 設定";
+"settings.port" = "監視ポート:";
+"settings.cidrs" = "検知する接続元 IP 範囲（CIDR・1 行 1 件）:";
+"settings.cidrs.note" = "空にすると自動切替は無効。既定は Tailscale の範囲。";
+"settings.launch_at_login" = "ログイン時に起動";
+"settings.save" = "保存";
+"settings.saved" = "保存しました。数秒以内に反映されます。";
+"settings.error.port" = "ポートは 1〜65535 の整数で入力してください。";
+"settings.error.cidr" = "不正な CIDR: %@";

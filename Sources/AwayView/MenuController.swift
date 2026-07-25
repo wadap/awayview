@@ -1,5 +1,4 @@
 import AppKit
-import ServiceManagement
 
 // メニューバー UI とアプリ全体の組み立て。メニュー構成は SwiftBar 版と同一
 // (3 モードラジオ + 解像度サブメニュー + ログ + 常駐設定 + 終了)。
@@ -10,6 +9,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var machine: StateMachine!
     private var statusItem: NSStatusItem!
     private var timer: DispatchSourceTimer?
+    private var settingsWindow: SettingsWindowController?
 
     private var currentState: WatchState = .home
     private var currentIP: String?
@@ -114,10 +114,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         logItem.target = self
         menu.addItem(logItem)
 
-        let login = NSMenuItem(title: "ログイン時に起動", action: #selector(toggleLoginItem), keyEquivalent: "")
-        login.target = self
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(login)
+        let settingsItem = NSMenuItem(title: L("menu.settings"), action: #selector(openSettings), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
 
         menu.addItem(.separator())
         let quit = NSMenuItem(title: L("menu.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -216,16 +215,10 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSWorkspace.shared.open(writer.directory.appendingPathComponent("watch.log"))
     }
 
-    @objc private func toggleLoginItem() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled {
-                try service.unregister()
-            } else {
-                try service.register()
-            }
-        } catch {
-            writer.log("!! login item: \(error.localizedDescription)")
+    @objc private func openSettings() {
+        if settingsWindow == nil {
+            settingsWindow = SettingsWindowController(settings: settings) { [weak self] in self?.tick() }
         }
+        settingsWindow?.show()
     }
 }

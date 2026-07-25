@@ -17,3 +17,14 @@
 "menu.open_log" = "Open Log";
 "menu.settings" = "Settings…";
 "menu.quit" = "Quit AwayView";
+
+/* settings */
+"settings.title" = "AwayView Settings";
+"settings.port" = "Port to watch:";
+"settings.cidrs" = "Remote IP ranges (CIDR, one per line):";
+"settings.cidrs.note" = "Empty list disables automatic switching. Default is the Tailscale range.";
+"settings.launch_at_login" = "Launch at login";
+"settings.save" = "Save";
+"settings.saved" = "Saved. Applies within a few seconds.";
+"settings.error.port" = "Port must be an integer between 1 and 65535.";
+"settings.error.cidr" = "Invalid CIDR: %@";
