@@ -136,7 +136,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let date = settings.modeChangedAt else { return "" }
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
-        return " (\(f.string(from: date))〜)"
+        return L("state.time_suffix", f.string(from: date))
     }
 
     private func disabled(_ title: String) -> NSMenuItem {
