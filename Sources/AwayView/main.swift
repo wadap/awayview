@@ -26,14 +26,12 @@ if args.contains("--list-modes") {
 }
 
 if args.contains("--list-connections") {
-    let monitor = ConnectionMonitor()
+    let settings = SettingsStore()
+    let monitor = ConnectionMonitor(localPort: settings.port,
+                                    matcher: CIDRMatcher(settings.cidrs))
     let ips = monitor.establishedForeignIPs()
-    print("port 5900 ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
-    if let ts = monitor.tailscaleRemoteIP() {
-        print("tailscale remote: \(ts)")
-    } else {
-        print("tailscale remote: (none)")
-    }
+    print("port \(settings.port) ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
+    print("matched remote: \(monitor.remoteIP() ?? "(none)")")
     exit(0)
 }
 

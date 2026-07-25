@@ -1,6 +1,6 @@
 import Foundation
 
-// zsh 版 bin/screenshare-res-watch.zsh のメインループの意味論を移植した純粋ロジック。
+// (削除済みの) zsh 版 watcher のメインループの意味論を移植した純粋ロジック。
 // 環境 (接続・表示・フラグ) は protocol 越しに観測し、テストではモックを注入する。
 //
 // zsh 版との対応:
@@ -11,8 +11,8 @@ import Foundation
 //   - フック: applyLow / restoreHome の成功のたびに発火 (zsh 版 run_hook と同じ)
 
 protocol ConnectionObserving {
-    /// 5900 番へ ESTABLISHED している Tailscale 接続元 IP (なければ nil)
-    func tailscaleRemoteIP() -> String?
+    /// 監視ポートへ ESTABLISHED している設定 CIDR 内の接続元 IP (なければ nil)
+    func remoteIP() -> String?
 }
 
 enum RestoreResult {
@@ -72,7 +72,7 @@ final class StateMachine {
     }
 
     func tick() {
-        let remoteIP = connection.tailscaleRemoteIP()
+        let remoteIP = connection.remoteIP()
 
         if flags.overrideHigh {
             settling = false

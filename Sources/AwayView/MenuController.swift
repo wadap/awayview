@@ -4,9 +4,9 @@ import ServiceManagement
 // メニューバー UI とアプリ全体の組み立て。メニュー構成は SwiftBar 版と同一
 // (3 モードラジオ + 解像度サブメニュー + ログ + 常駐設定 + 終了)。
 final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    private let store: StateStore
+    private let writer: ObservationWriter
+    private let settings: SettingsStore
     private let display: RealDisplayController
-    private let connection = ConnectionMonitor()
     private var machine: StateMachine!
     private var statusItem: NSStatusItem!
     private var timer: DispatchSourceTimer?
@@ -16,15 +16,21 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var lastLogged: WatchState?
 
     init(stateDirectory: URL? = nil) {
-        self.store = stateDirectory.map { StateStore(directory: $0) } ?? StateStore()
+        self.writer = stateDirectory.map { ObservationWriter(directory: $0) } ?? ObservationWriter()
+        self.settings = SettingsStore()
         self.display = RealDisplayController()
         super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        display.log = { [store] message in store.log(message) }
+        display.log = { [writer] message in writer.log(message) }
+        Hooks.log = { [writer] message in writer.log(message) }
 
-        machine = StateMachine(connection: connection, display: display, flags: store) { [weak self] state, ip in
+        machine = StateMachine(
+            connection: SettingsBackedConnection(settings: settings),
+            display: display,
+            flags: settings
+        ) { [weak self] state, ip in
             self?.stateChanged(state, ip)
         }
         machine.onLowApplied = { Hooks.run("on_low") }
@@ -36,7 +42,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.delegate = self
         statusItem.menu = menu
 
-        store.log("watcher started (native)")
+        writer.log("watcher started (native)")
 
         let t = DispatchSource.makeTimerSource(queue: .main)
         t.schedule(deadline: .now() + 1, repeating: 3)   // POLL_INTERVAL 相当
@@ -55,14 +61,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         currentIP = ip
         if state != lastLogged {
             switch state {
-            case .low: store.log("-> LOW (Tailscale remote)")
-            case .lowManual: store.log("-> LOW (manual)")
-            case .override: store.log("-> HIGH (override)")
-            case .home: store.log("-> HIGH (restored)")
+            case .low: writer.log("-> LOW (Tailscale remote)")
+            case .lowManual: writer.log("-> LOW (manual)")
+            case .override: writer.log("-> HIGH (override)")
+            case .home: writer.log("-> HIGH (restored)")
             }
             lastLogged = state
         }
-        store.writeState(state, remoteIP: ip)
+        writer.writeState(state, remoteIP: ip)
     }
 
     private func updateIcon() {
@@ -93,7 +99,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(disabled("接続: \(currentIP ?? "なし")"))
         menu.addItem(.separator())
 
-        let mode = store.currentMode
+        let mode = settings.currentMode
         menu.addItem(modeItem("自動判定", .auto, current: mode))
         menu.addItem(modeItem("高解像度（自宅）", .high, current: mode))
         menu.addItem(modeItem("低解像度（外出）", .low, current: mode))
@@ -122,15 +128,13 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch currentState {
         case .home: return "ホーム解像度"
         case .low: return "低解像度"
-        case .lowManual: return "低解像度に固定中\(flagTimeSuffix("force_low"))"
-        case .override: return "高解像度に固定中\(flagTimeSuffix("override"))"
+        case .lowManual: return "低解像度に固定中\(modeTimeSuffix())"
+        case .override: return "高解像度に固定中\(modeTimeSuffix())"
         }
     }
 
-    private func flagTimeSuffix(_ flag: String) -> String {
-        let url = store.directory.appendingPathComponent(flag)
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let date = attrs[.modificationDate] as? Date else { return "" }
+    private func modeTimeSuffix() -> String {
+        guard let date = settings.modeChangedAt else { return "" }
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         return " (\(f.string(from: date))〜)"
@@ -153,7 +157,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private enum ResKind { case high, low }
 
     private func resParent(kind: ResKind, modes: [DisplayModeInfo]) -> NSMenuItem {
-        let selected = kind == .high ? store.resHigh : store.resLow
+        let selected = kind == .high ? settings.resHigh : settings.resLow
         let defaultLabel: String
         switch kind {
         case .high:
@@ -194,22 +198,22 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func selectMode(_ sender: NSMenuItem) {
         guard let mode = sender.representedObject as? WatchMode else { return }
-        store.setMode(mode)
+        settings.setMode(mode)
         tick()   // 即反映
     }
 
     @objc private func selectResHigh(_ sender: NSMenuItem) {
-        store.setResHigh(sender.representedObject as? String)
+        settings.setResHigh(sender.representedObject as? String)
         tick()
     }
 
     @objc private func selectResLow(_ sender: NSMenuItem) {
-        store.setResLow(sender.representedObject as? String)
+        settings.setResLow(sender.representedObject as? String)
         tick()
     }
 
     @objc private func openLog() {
-        NSWorkspace.shared.open(store.directory.appendingPathComponent("watch.log"))
+        NSWorkspace.shared.open(writer.directory.appendingPathComponent("watch.log"))
     }
 
     @objc private func toggleLoginItem() {
@@ -221,7 +225,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 try service.register()
             }
         } catch {
-            store.log("!! login item: \(error.localizedDescription)")
+            writer.log("!! login item: \(error.localizedDescription)")
         }
     }
 }

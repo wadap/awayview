@@ -52,16 +52,3 @@ final class ObservationWriter {
         }
     }
 }
-
-// Task 5 で削除する暫定エイリアス (MenuController が旧 API 名を参照している間だけ)
-typealias StateStore = ObservationWriter
-extension ObservationWriter: FlagReading {
-    var overrideHigh: Bool { false }
-    var forceLow: Bool { false }
-    var resLow: String? { nil }
-    var resHigh: String? { nil }
-    var currentMode: WatchMode { .auto }
-    func setMode(_ mode: WatchMode) {}
-    func setResLow(_ res: String?) {}
-    func setResHigh(_ res: String?) {}
-}

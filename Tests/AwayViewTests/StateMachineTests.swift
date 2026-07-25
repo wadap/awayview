@@ -6,7 +6,7 @@ import XCTest
 
 final class MockConnection: ConnectionObserving {
     var ip: String?
-    func tailscaleRemoteIP() -> String? { ip }
+    func remoteIP() -> String? { ip }
 }
 
 final class MockDisplay: DisplayControlling {
