@@ -13,11 +13,14 @@ final class SettingsWindowController {
         window.title = L("settings.title")
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
+        window.setFrameAutosaveName("AwayViewSettings")
+        if !window.setFrameUsingName("AwayViewSettings") {
+            window.center()   // 初回のみ
+        }
     }
 
     func show() {
         NSApp.activate(ignoringOtherApps: true)   // accessory アプリなので明示活性化
-        window.center()
         window.makeKeyAndOrderFront(nil)
     }
 }
@@ -88,7 +91,8 @@ struct SettingsView: View {
     }
 
     private func save() {
-        guard let p = Int(portText), (1...65535).contains(p) else {
+        let trimmedPort = portText.trimmingCharacters(in: .whitespaces)
+        guard let p = Int(trimmedPort), (1...65535).contains(p) else {
             message = L("settings.error.port")
             isError = true
             return
@@ -103,6 +107,7 @@ struct SettingsView: View {
             return
         }
         settings.port = UInt16(p)
+        portText = String(p)
         settings.cidrs = lines
         message = L("settings.saved")
         isError = false
