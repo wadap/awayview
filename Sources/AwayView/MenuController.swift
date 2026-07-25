@@ -61,7 +61,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         currentIP = ip
         if state != lastLogged {
             switch state {
-            case .low: writer.log("-> LOW (Tailscale remote)")
+            case .low: writer.log("-> LOW (remote connection)")
             case .lowManual: writer.log("-> LOW (manual)")
             case .override: writer.log("-> HIGH (override)")
             case .home: writer.log("-> HIGH (restored)")
