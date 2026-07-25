@@ -75,7 +75,7 @@ if args.contains("--help") || args.contains("-h") {
 }
 
 // 引数なし: メニューバーアプリとして常駐
-let stateDir = ProcessInfo.processInfo.environment["SCREENSHARE_RES_STATE_DIR"]
+let stateDir = ProcessInfo.processInfo.environment["AWAYVIEW_STATE_DIR"]
     .map { URL(fileURLWithPath: $0) }
 let app = NSApplication.shared
 let controller = AppController(stateDirectory: stateDir)
