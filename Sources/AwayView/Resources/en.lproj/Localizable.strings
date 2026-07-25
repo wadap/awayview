@@ -1,0 +1,19 @@
+/* menu */
+"menu.no_display" = "⚠️ No target display found";
+"menu.state" = "Status: %@";
+"menu.connection" = "Connection: %@";
+"menu.connection.none" = "none";
+"mode.auto" = "Automatic";
+"mode.high" = "High resolution (home)";
+"mode.low" = "Low resolution (away)";
+"state.home" = "Home resolution";
+"state.low" = "Low resolution";
+"state.low_manual" = "Pinned to low resolution%@";
+"state.override" = "Pinned to high resolution%@";
+"res.high.title" = "High res: %@";
+"res.low.title" = "Low res: %@";
+"res.high.default" = "Auto-learned%@";
+"res.low.default" = "Default (half of home)";
+"menu.open_log" = "Open Log";
+"menu.settings" = "Settings…";
+"menu.quit" = "Quit AwayView";

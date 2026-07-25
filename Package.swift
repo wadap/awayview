@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "AwayView",
+    defaultLocalization: "en",
     platforms: [.macOS(.v13)],
     targets: [
         .target(
@@ -13,6 +14,7 @@ let package = Package(
             name: "AwayView",
             dependencies: ["CShim"],
             path: "Sources/AwayView",
+            resources: [.process("Resources")],
             linkerSettings: [
                 .linkedFramework("ColorSync"),  // CGDisplayCreateUUIDFromDisplayID の実体
                 .linkedFramework("AppKit"),

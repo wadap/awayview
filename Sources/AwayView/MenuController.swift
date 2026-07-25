@@ -91,18 +91,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
 
         if display.resolveTarget() == nil {
-            menu.addItem(disabled("⚠️ 対象ディスプレイが見つかりません"))
+            menu.addItem(disabled(L("menu.no_display")))
             menu.addItem(.separator())
         }
 
-        menu.addItem(disabled("状態: \(stateLabel())"))
-        menu.addItem(disabled("接続: \(currentIP ?? "なし")"))
+        menu.addItem(disabled(L("menu.state", stateLabel())))
+        menu.addItem(disabled(L("menu.connection", currentIP ?? L("menu.connection.none"))))
         menu.addItem(.separator())
 
         let mode = settings.currentMode
-        menu.addItem(modeItem("自動判定", .auto, current: mode))
-        menu.addItem(modeItem("高解像度（自宅）", .high, current: mode))
-        menu.addItem(modeItem("低解像度（外出）", .low, current: mode))
+        menu.addItem(modeItem(L("mode.auto"), .auto, current: mode))
+        menu.addItem(modeItem(L("mode.high"), .high, current: mode))
+        menu.addItem(modeItem(L("mode.low"), .low, current: mode))
         menu.addItem(.separator())
 
         let modes = display.resolveTarget().map { DisplayController.allModes(for: $0) } ?? []
@@ -110,7 +110,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(resParent(kind: .low, modes: modes))
         menu.addItem(.separator())
 
-        let logItem = NSMenuItem(title: "ログを開く", action: #selector(openLog), keyEquivalent: "")
+        let logItem = NSMenuItem(title: L("menu.open_log"), action: #selector(openLog), keyEquivalent: "")
         logItem.target = self
         menu.addItem(logItem)
 
@@ -120,16 +120,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(login)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "終了", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quit = NSMenuItem(title: L("menu.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
     }
 
     private func stateLabel() -> String {
         switch currentState {
-        case .home: return "ホーム解像度"
-        case .low: return "低解像度"
-        case .lowManual: return "低解像度に固定中\(modeTimeSuffix())"
-        case .override: return "高解像度に固定中\(modeTimeSuffix())"
+        case .home: return L("state.home")
+        case .low: return L("state.low")
+        case .lowManual: return L("state.low_manual", modeTimeSuffix())
+        case .override: return L("state.override", modeTimeSuffix())
         }
     }
 
@@ -162,12 +162,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch kind {
         case .high:
             let home = display.storedHome().map { " (\($0.width)x\($0.height))" } ?? ""
-            defaultLabel = "自動学習\(home)"
+            defaultLabel = L("res.high.default", home)
         case .low:
-            defaultLabel = "既定（ホームの半分）"
+            defaultLabel = L("res.low.default")
         }
-        let title = kind == .high ? "高解像度: \(selected ?? defaultLabel)"
-                                  : "低解像度: \(selected ?? defaultLabel)"
+        let title = kind == .high ? L("res.high.title", selected ?? defaultLabel)
+                                  : L("res.low.title", selected ?? defaultLabel)
         let parent = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu()
 
