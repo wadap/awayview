@@ -32,7 +32,7 @@
 **Interfaces:**
 - Produces: モジュール名 `AwayView`（以後の全タスクは `@testable import AwayView`）。`make build|install|uninstall|check|test`。実行体名 `AwayView`
 
-- [ ] **Step 1: ブランチ作成と legacy 削除・移動**
+- [x] **Step 1: ブランチ作成と legacy 削除・移動**
 
 ```bash
 git checkout -b phase1-awayview
@@ -43,7 +43,7 @@ git mv Sources/ScreenshareRes Sources/AwayView
 git mv Tests/ScreenshareResTests Tests/AwayViewTests
 ```
 
-- [ ] **Step 2: Package.swift を全置換**
+- [x] **Step 2: Package.swift を全置換**
 
 ```swift
 // swift-tools-version: 5.9
@@ -75,7 +75,7 @@ let package = Package(
 )
 ```
 
-- [ ] **Step 3: Info.plist を全置換**
+- [x] **Step 3: Info.plist を全置換**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -106,7 +106,7 @@ let package = Package(
 </plist>
 ```
 
-- [ ] **Step 4: Makefile を全置換**
+- [x] **Step 4: Makefile を全置換**
 
 ```make
 .PHONY: build install uninstall check test
@@ -148,23 +148,23 @@ test:
 
 （`AwayView_AwayView.bundle` のコピーは Task 7 で i18n リソースが増えたとき有効になるガード）
 
-- [ ] **Step 5: .gitignore の Swift 節を更新**
+- [x] **Step 5: .gitignore の Swift 節を更新**
 
 `native/.build/` → `.build/`、`native/dist/` → `dist/` に変更（他の行はそのまま）。
 
-- [ ] **Step 6: ソース内の名前参照を更新**
+- [x] **Step 6: ソース内の名前参照を更新**
 
 - テスト 5 ファイル（`Tests/AwayViewTests/*.swift`）: `@testable import ScreenshareRes` → `@testable import AwayView`
 - `Sources/AwayView/main.swift:72`: usage 文字列 `ScreenshareRes [--list-modes ...]` → `AwayView [--list-modes ...]`
 - `Sources/AwayView/DisplayController.swift:80`: `static let suiteName = "com.wadap.screenshare-res.native"` → `static let suiteName = "com.wadap.AwayView"`
   （ホーム学習・TargetDisplayUUID は新 suite で再学習になる。設計どおり）
 
-- [ ] **Step 7: ビルドとテストで移行を検証**
+- [x] **Step 7: ビルドとテストで移行を検証**
 
 Run: `make check && make test`
 Expected: ビルド成功、既存テスト全 PASS（StateMachine/StateStore/Hooks/ConnectionMonitor/DisplayModeSelection）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -182,7 +182,7 @@ git commit -m "refactor: クリーンブレーク — native を repo 直下へ�
 **Interfaces:**
 - Produces: `struct CIDRMatcher { init(_ cidrs: [String]); func matches(_ ip: String) -> Bool; static func parseCIDR(_ s: String) -> ([UInt8], Int)?; static let defaultCIDRs: [String] }`
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `Tests/AwayViewTests/CIDRMatcherTests.swift`:
 
@@ -248,12 +248,12 @@ final class CIDRMatcherTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: 失敗を確認**
+- [x] **Step 2: 失敗を確認**
 
 Run: `make test`
 Expected: FAIL（`cannot find 'CIDRMatcher' in scope` のコンパイルエラー）
 
-- [ ] **Step 3: 実装**
+- [x] **Step 3: 実装**
 
 `Sources/AwayView/CIDRMatcher.swift`:
 
@@ -318,12 +318,12 @@ struct CIDRMatcher {
 }
 ```
 
-- [ ] **Step 4: テストが通ることを確認**
+- [x] **Step 4: テストが通ることを確認**
 
 Run: `make test`
 Expected: 全 PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/AwayView/CIDRMatcher.swift Tests/AwayViewTests/CIDRMatcherTests.swift
@@ -343,7 +343,7 @@ git commit -m "feat: CIDRMatcher — 検知 IP 範囲を CIDR リストで設定
 - Consumes: `FlagReading`（StateMachine.swift、無変更）、`CIDRMatcher.defaultCIDRs`（Task 2）
 - Produces: `final class SettingsStore: FlagReading { init(defaults: UserDefaults, now: @escaping () -> Date); convenience init(); var port: UInt16; var cidrs: [String]; var currentMode: WatchMode; func setMode(_:); var modeChangedAt: Date?; func setResLow(_: String?); func setResHigh(_: String?); static let defaultPort: UInt16 }`。`enum WatchMode` はこのファイルが定義元になる
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `Tests/AwayViewTests/SettingsStoreTests.swift`:
 
@@ -426,12 +426,12 @@ final class SettingsStoreTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: 失敗を確認**
+- [x] **Step 2: 失敗を確認**
 
 Run: `make test`
 Expected: FAIL（`cannot find 'SettingsStore' in scope`）
 
-- [ ] **Step 3: 実装**
+- [x] **Step 3: 実装**
 
 `Sources/AwayView/SettingsStore.swift`:
 
@@ -517,12 +517,12 @@ final class SettingsStore: FlagReading {
 
 同時に `Sources/AwayView/StateStore.swift` から `enum WatchMode { case auto, high, low }` の 3 行を削除（定義が二重になるため。StateStore 自体はまだ触らない）。
 
-- [ ] **Step 4: テストが通ることを確認**
+- [x] **Step 4: テストが通ることを確認**
 
 Run: `make test`
 Expected: 全 PASS（既存 StateStoreTests も含む — WatchMode は同一モジュール内で解決される）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add Sources/AwayView/SettingsStore.swift Sources/AwayView/StateStore.swift Tests/AwayViewTests/SettingsStoreTests.swift
@@ -543,7 +543,7 @@ git commit -m "feat: SettingsStore — 設定・手動モードを UserDefaults 
 - Produces: `final class ObservationWriter { let directory: URL; init(directory: URL = ~/.local/state/awayview, now: @escaping () -> Date = { Date() }); func writeState(_ state: WatchState, remoteIP: String?); func log(_ message: String) }`。テスト用 env は `AWAYVIEW_STATE_DIR`
 - 消えるもの: `StateStore` の `setMode/currentMode/overrideHigh/forceLow/resLow/resHigh/setResLow/setResHigh`（SettingsStore に移行済み）
 
-- [ ] **Step 1: テストを先に書き換える**
+- [x] **Step 1: テストを先に書き換える**
 
 ```bash
 git mv Tests/AwayViewTests/StateStoreTests.swift Tests/AwayViewTests/ObservationWriterTests.swift
@@ -615,12 +615,12 @@ final class ObservationWriterTests: XCTestCase {
 }
 ```
 
-- [ ] **Step 2: 失敗を確認**
+- [x] **Step 2: 失敗を確認**
 
 Run: `make test`
 Expected: FAIL（`cannot find 'ObservationWriter' in scope`）
 
-- [ ] **Step 3: 実装（リネーム + 縮小）**
+- [x] **Step 3: 実装（リネーム + 縮小）**
 
 ```bash
 git mv Sources/AwayView/StateStore.swift Sources/AwayView/ObservationWriter.swift
@@ -685,7 +685,7 @@ final class ObservationWriter {
 }
 ```
 
-- [ ] **Step 4: 呼び出し側の暫定修正（コンパイルを通す）**
+- [x] **Step 4: 呼び出し側の暫定修正（コンパイルを通す）**
 
 MenuController の本格統合は Task 5 で行う。このタスクでは MenuController を**一切変更せず**、ビルドを通すための暫定 shim を `ObservationWriter.swift` 末尾に置く（Task 5 Step 5 で削除する）:
 
@@ -706,12 +706,12 @@ extension ObservationWriter: FlagReading {
 
 - `Sources/AwayView/main.swift:78`: `SCREENSHARE_RES_STATE_DIR` → `AWAYVIEW_STATE_DIR`
 
-- [ ] **Step 5: テストが通ることを確認**
+- [x] **Step 5: テストが通ることを確認**
 
 Run: `make test`
 Expected: 全 PASS（この時点でメニューのモード/解像度操作は shim で一時的に無効だが、テスト対象外。Task 5 で復活する）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -735,14 +735,14 @@ git commit -m "refactor: StateStore を ObservationWriter (出力専用) に縮�
 - Consumes: `CIDRMatcher`（Task 2）、`SettingsStore`（Task 3）、`ObservationWriter`（Task 4）
 - Produces: `protocol ConnectionObserving { func remoteIP() -> String? }`（旧 `tailscaleRemoteIP()`）。`ConnectionMonitor(localPort: UInt16, matcher: CIDRMatcher)`。`struct SettingsBackedConnection: ConnectionObserving`。`Hooks.hooksDir` 既定 = `~/.config/awayview/hooks`、`Hooks.configPath` と zsh 関数互換は削除
 
-- [ ] **Step 1: StateMachine の protocol を rename**
+- [x] **Step 1: StateMachine の protocol を rename**
 
 `StateMachine.swift`:
 - `protocol ConnectionObserving` のメソッドを `func tailscaleRemoteIP() -> String?` → `func remoteIP() -> String?` に（doc コメントも「監視ポートへ ESTABLISHED している設定 CIDR 内の接続元 IP (なければ nil)」に更新）
 - `tick()` 内 `connection.tailscaleRemoteIP()` → `connection.remoteIP()`
 - ファイル冒頭コメントの「zsh 版 bin/screenshare-res-watch.zsh」への言及は「(削除済みの) zsh 版 watcher」に変更
 
-- [ ] **Step 2: ConnectionMonitor を CIDRMatcher ベースに全置換**
+- [x] **Step 2: ConnectionMonitor を CIDRMatcher ベースに全置換**
 
 `Sources/AwayView/ConnectionMonitor.swift`:
 
@@ -789,12 +789,12 @@ struct SettingsBackedConnection: ConnectionObserving {
 
 （`isTailscaleIP` 関数は削除 — CIDRMatcher が後継）
 
-- [ ] **Step 3: テストを追従**
+- [x] **Step 3: テストを追従**
 
 - `ConnectionMonitorTests.swift`: `TailscaleRangeTests` クラスを丸ごと削除（CIDRMatcherTests が後継）。`ConnectionMonitorSmokeTests` は無変更で残す
 - `StateMachineTests.swift`: mock の `func tailscaleRemoteIP()` を `func remoteIP()` に改名（実装内容は変更なし。grep で 1 箇所）
 
-- [ ] **Step 4: Hooks のパス変更と zsh 互換削除**
+- [x] **Step 4: Hooks のパス変更と zsh 互換削除**
 
 `Sources/AwayView/Hooks.swift` を全置換:
 
@@ -841,7 +841,7 @@ enum Hooks {
 
 `Tests/AwayViewTests/HooksTests.swift` の setUp から `Hooks.configPath = ...` の行を削除（他は無変更で通る）。
 
-- [ ] **Step 5: MenuController を SettingsStore + ObservationWriter に統合**
+- [x] **Step 5: MenuController を SettingsStore + ObservationWriter に統合**
 
 `Sources/AwayView/MenuController.swift` の変更点（クラス全体の構造は維持）:
 
@@ -898,7 +898,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
 最後に `ObservationWriter.swift` 末尾の暫定 shim（`typealias StateStore` と `extension ObservationWriter: FlagReading`）を削除。
 
-- [ ] **Step 6: main.swift の --list-connections を設定対応に**
+- [x] **Step 6: main.swift の --list-connections を設定対応に**
 
 `main.swift` の該当ブロックを置換:
 
@@ -914,12 +914,12 @@ if args.contains("--list-connections") {
 }
 ```
 
-- [ ] **Step 7: ビルド・全テスト**
+- [x] **Step 7: ビルド・全テスト**
 
 Run: `make check && make test`
 Expected: 全 PASS（StateMachineTests は remoteIP 改名後のロジック回帰を担保）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -941,7 +941,7 @@ git commit -m "feat: 接続判定を設定 (ポート/CIDR) ベースに汎用�
 **Interfaces:**
 - Produces: `func L(_ key: String) -> String` / `func L(_ key: String, _ args: CVarArg...) -> String`（`Bundle.module` 経由）。以後の UI 文字列はすべて L() を通す
 
-- [ ] **Step 1: Package.swift に localization とリソースを追加**
+- [x] **Step 1: Package.swift に localization とリソースを追加**
 
 `.executableTarget(name: "AwayView", ...)` を以下に変更し、`Package(name: "AwayView",` の直後に `defaultLocalization: "en",` を追加:
 
@@ -964,7 +964,7 @@ let package = Package(
     ...
 ```
 
-- [ ] **Step 2: L() ヘルパー**
+- [x] **Step 2: L() ヘルパー**
 
 `Sources/AwayView/Localization.swift`:
 
@@ -980,7 +980,7 @@ func L(_ key: String, _ args: CVarArg...) -> String {
 }
 ```
 
-- [ ] **Step 3: strings ファイル（en）**
+- [x] **Step 3: strings ファイル（en）**
 
 `Sources/AwayView/Resources/en.lproj/Localizable.strings`:
 
@@ -1006,7 +1006,7 @@ func L(_ key: String, _ args: CVarArg...) -> String {
 "menu.quit" = "Quit AwayView";
 ```
 
-- [ ] **Step 4: strings ファイル（ja）**
+- [x] **Step 4: strings ファイル（ja）**
 
 `Sources/AwayView/Resources/ja.lproj/Localizable.strings`:
 
@@ -1034,7 +1034,7 @@ func L(_ key: String, _ args: CVarArg...) -> String {
 
 （`menu.settings` / `menu.quit` は Task 7 のメニュー変更でも使う。`menu.quit` の ja は従来表記「終了」を維持）
 
-- [ ] **Step 5: MenuController の文字列を置換**
+- [x] **Step 5: MenuController の文字列を置換**
 
 `menuNeedsUpdate` / `stateLabel` / `resParent` 内のリテラルを対応キーで置換:
 
@@ -1047,7 +1047,7 @@ func L(_ key: String, _ args: CVarArg...) -> String {
 - `"ログを開く"` → `L("menu.open_log")`、`"終了"` → `L("menu.quit")`
 - `"ログイン時に起動"` はこのタスクでは据え置き（Task 7 で設定ウィンドウへ移動して消える）
 
-- [ ] **Step 6: Info.plist にロケール宣言を追加**
+- [x] **Step 6: Info.plist にロケール宣言を追加**
 
 `</dict>` の直前に追加:
 
@@ -1061,7 +1061,7 @@ func L(_ key: String, _ args: CVarArg...) -> String {
 	</array>
 ```
 
-- [ ] **Step 7: ビルド・テスト・手動確認**
+- [x] **Step 7: ビルド・テスト・手動確認**
 
 Run: `make check && make test`
 Expected: 全 PASS
@@ -1072,7 +1072,7 @@ Expected: `AwayView_AwayView.bundle` が入っている（Task 1 の Makefile �
 手動: `open dist/AwayView.app` → メニューが日本語（システム言語 ja のため）。`pkill -x AwayView` で終了
 （本番の ScreenshareRes.app と同時に動くのは数十秒だが、どちらも home 状態なら解像度は動かない。気になるなら先に ScreenshareRes.app を一時 pkill してもよい）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add -A
@@ -1092,7 +1092,7 @@ git commit -m "feat: i18n 基盤 (Localizable.strings en/ja) とメニューの�
 - Consumes: `SettingsStore`（Task 3）、`CIDRMatcher.parseCIDR`（Task 2）、`L()`（Task 6）
 - Produces: `final class SettingsWindowController { init(settings: SettingsStore, onChange: @escaping () -> Void); func show() }`
 
-- [ ] **Step 1: strings に settings.* を追加**
+- [x] **Step 1: strings に settings.* を追加**
 
 en に追加:
 
@@ -1124,7 +1124,7 @@ ja に追加:
 "settings.error.cidr" = "不正な CIDR: %@";
 ```
 
-- [ ] **Step 2: SettingsWindow.swift を作成**
+- [x] **Step 2: SettingsWindow.swift を作成**
 
 ```swift
 import AppKit
@@ -1240,7 +1240,7 @@ struct SettingsView: View {
 }
 ```
 
-- [ ] **Step 3: メニューに「設定…」を追加し、ログイン項目トグルを撤去**
+- [x] **Step 3: メニューに「設定…」を追加し、ログイン項目トグルを撤去**
 
 `MenuController.swift`:
 - プロパティ追加: `private var settingsWindow: SettingsWindowController?`
@@ -1265,7 +1265,7 @@ struct SettingsView: View {
 
 - `import ServiceManagement` は MenuController から削除可（SettingsWindow.swift 側に移った）
 
-- [ ] **Step 4: ビルド・テスト・手動確認**
+- [x] **Step 4: ビルド・テスト・手動確認**
 
 Run: `make check && make test`
 Expected: 全 PASS
@@ -1278,7 +1278,7 @@ Expected: 全 PASS
 5. `defaults read com.wadap.AwayView` に `Port` / `CIDRs` が入っている
 6. 確認後 `pkill -x AwayView`、`defaults delete com.wadap.AwayView Port CIDRs`（自分の環境を既定に戻す）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -1297,7 +1297,7 @@ git commit -m "feat: 設定ウィンドウ (ポート / CIDR / ログイン時�
 **Interfaces:**
 - Consumes: ここまでの全確定仕様（名前・パス・設定キー・hooks 契約）
 
-- [ ] **Step 1: README.md（英語）を全置換**
+- [x] **Step 1: README.md（英語）を全置換**
 
 構成（この見出しと内容を含めること。文章は執筆者が整えてよいが事実は変えない）:
 
@@ -1355,11 +1355,11 @@ Disable "Launch at login" in Settings first if you enabled it.
 MIT
 ```
 
-- [ ] **Step 2: README.ja.md を作成**
+- [x] **Step 2: README.ja.md を作成**
 
 README.md と同じ構成の日本語版（見出し: 何をするか / 仕組み / 動作環境 / インストール / メニュー / 設定 / フック / 観測ファイル / アンインストール / ライセンス）。内容は README.md の対訳で、事実（パス・既定値・コマンド）は完全一致させる。README.md 冒頭に `[日本語](README.ja.md)`、README.ja.md 冒頭に `[English](README.md)` の相互リンクを置く。
 
-- [ ] **Step 3: CLAUDE.md を全置換**
+- [x] **Step 3: CLAUDE.md を全置換**
 
 ```markdown
 # CLAUDE.md — AwayView
@@ -1425,12 +1425,12 @@ Phase 1 (66a2360 以降) でクリーンブレークして native 一本化・Aw
 旧実装は git 履歴参照。配布 (署名/notarize/Homebrew) は Phase 2 で予定。
 ```
 
-- [ ] **Step 4: リンク・事実の突き合わせ**
+- [x] **Step 4: リンク・事実の突き合わせ**
 
 README.md / README.ja.md / CLAUDE.md の間で以下が完全一致することを確認:
 パス（`~/.config/awayview/hooks/on_low.d` 等）、既定値（5900 / Tailscale 2 レンジ）、コマンド（`make install` 等）、メニューアイコン 4 種。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md README.ja.md CLAUDE.md

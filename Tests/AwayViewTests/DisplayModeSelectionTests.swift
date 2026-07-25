@@ -1,5 +1,5 @@
 import XCTest
-@testable import ScreenshareRes
+@testable import AwayView
 
 final class DisplayModeSelectionTests: XCTestCase {
     private func mode(_ w: Int, _ h: Int, hiDPI: Bool, hz: Double = 120) -> DisplayModeInfo {

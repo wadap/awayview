@@ -1,12 +1,12 @@
 import XCTest
-@testable import ScreenshareRes
+@testable import AwayView
 
 // zsh 版 tests/watcher.test.zsh のシナリオ移植。
 // SETTLE は「二段階遷移」(接続検知 tick の次 tick で再確認して適用)。
 
 final class MockConnection: ConnectionObserving {
     var ip: String?
-    func tailscaleRemoteIP() -> String? { ip }
+    func remoteIP() -> String? { ip }
 }
 
 final class MockDisplay: DisplayControlling {

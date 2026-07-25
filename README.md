@@ -1,146 +1,53 @@
-# screenshare-res
+[日本語](README.ja.md)
 
-外出先から **Tailscale 経由で自宅 Mac に画面共有**したときだけ、ホスト側の
-ディスプレイ解像度を自動で下げる（＝小さい画面で文字を大きく見る）。
-接続が切れたら元の高解像度へ自動復帰する launchd 常駐スクリプト。
+# AwayView
 
-- ポート 5900 の ESTABLISHED 接続を監視し、**接続元 IP が Tailscale の
-  範囲 `100.64.0.0/10`** のときだけ低解像度化する
-- 同じ LAN からのローカル画面共有では下げない
-- ホーム解像度はハードコードせず、ホーム状態のあいだ自動キャッシュ →
-  切断時にそれへ復帰
+Automatically lowers your Mac's display resolution while you're screen-sharing
+into it from far away — and restores it the moment you disconnect.
 
-## 必要なもの
+The point is not bandwidth: on a small remote screen (an iPad on the road,
+a laptop at a café), your desktop's native resolution renders text too small
+to read. AwayView switches the Mac to a lower resolution so everything is
+bigger, then switches back when you leave.
 
-- Apple Silicon Mac / macOS（ホストは常時起動＆自分のユーザーでログイン中）
-- [`displayplacer`](https://github.com/jakehilborn/displayplacer)
-  `brew install jakehilborn/jakehilborn/displayplacer`
-- Tailscale（リモート接続経路）
+## How it works
+- A menu bar app polls established TCP connections to a watched port
+  (default 5900 = macOS Screen Sharing) via sysctl — no root, no shell-outs.
+- If the peer address falls inside configured CIDR ranges
+  (default: the Tailscale range 100.64.0.0/10 + fd7a:115c:a1e0::/48),
+  the display switches to a low resolution after a short settle delay.
+- On disconnect it restores the previous ("home") resolution, which is
+  auto-learned and guarded against mis-learning during display sleep.
 
-## セットアップ
+## Requirements
+- macOS 13+ / Apple silicon or Intel
+- Xcode toolchain to build from source (`swift build`)
 
-```sh
-# 1) 設定を用意（初回 install が無ければ自動でコピーする）
-cp config.example.zsh ~/.config/screenshare-res/config.zsh
-$EDITOR ~/.config/screenshare-res/config.zsh   # SCREEN_ID と LOW_CMD を埋める
+## Install (from source)
+    git clone https://github.com/wadap/awayview && cd awayview
+    make install       # builds dist/AwayView.app, copies to ~/Applications, launches
 
-# SCREEN_ID は次で確認
-/opt/homebrew/bin/displayplacer list
+## Menu bar
+🏠 home / 💻 low / 📌 pinned high / ⚠️ no target display.
+Modes: Automatic / High resolution (home) / Low resolution (away).
+Resolution pickers for both high and low sides.
 
-# 2) 自宅で・画面共有していない状態で install（ホーム解像度をキャッシュ）
-make install      # = ./install.sh install
-```
+## Settings
+Menu → Settings…: watched port, remote CIDR ranges (one per line; empty list
+disables automatic switching), launch at login. Changes apply within seconds.
 
-## 使い方
+## Hooks
+Executable files in `~/.config/awayview/hooks/on_low.d/` and `on_high.d/`
+run (in name order) after each successful switch. Failures are logged and
+never block the watcher.
 
-```sh
-make status       # 稼働状況＋直近ログ
-make logs         # watch.log を tail -f
-make reload       # 設定変更後の再読み込み
-make uninstall    # 常駐解除・SwiftBar symlink 削除（config/log は残す）
-make check        # zsh 構文チェック
-make test         # スタブによる自動テスト
-```
+## Observability
+`~/.local/state/awayview/state` (current STATE/REMOTE_IP/CHANGED_AT) and
+`~/.local/state/awayview/watch.log`.
 
-動作確認：別マシンから Tailscale 経由で画面共有 → 解像度が下がる → 切断で戻る。
+## Uninstall
+    make uninstall     # or quit from the menu and delete ~/Applications/AwayView.app
+Disable "Launch at login" in Settings first if you enabled it.
 
-## 仕組み
-
-`bin/screenshare-res-watch.zsh` が `POLL_INTERVAL` 秒ごとに:
-
-1. `netstat` で 5900 の ESTABLISHED 接続を取得、接続元 IP が Tailscale 範囲か判定
-   （`lsof` はユーザー権限だと root 所有の screensharingd のソケットが見えないため不可）
-2. リモート接続あり → `LOW_CMD` を `displayplacer` で適用（初回は下げる直前に
-   ホーム解像度をキャッシュ）
-3. リモート接続なし → キャッシュしたホーム配置へ復帰し、以後もホーム配置を追従キャッシュ
-
-## SwiftBar プラグイン（メニューバー表示と手動固定）
-
-[SwiftBar](https://github.com/swiftbar/SwiftBar)（`brew install --cask swiftbar`）
-を入れると、watcher の状態をメニューバーで確認できる:
-
-- 🏠 ホーム解像度 / 💻 低解像度 / 📌 高解像度に固定中 / ⚠️ watcher 停止
-- モードを 3 択から選択（✓ が現在モード。固定は手動で自動判定に戻すまで有効）:
-  **自動判定 / 高解像度（自宅） / 低解像度（外出）**
-- 高解像度・低解像度それぞれの解像度をサブメニューの一覧から選択できる。
-  高解像度は「自動学習」（ホーム状態を追従キャッシュ）が既定、
-  低解像度は config の `LOW_CMD` が既定。メニュー選択時は HiDPI (scaling:on) 固定
-- ログを開く / watcher を再起動もメニューから
-
-```sh
-# SwiftBar を一度起動してプラグインフォルダを選んでから
-make swiftbar     # プラグインを symlink 設置
-```
-
-仕組み: watcher が `~/.local/state/screenshare-res/state` に現在状態を書き、
-プラグインはそれを表示するだけ。モードは同ディレクトリの `override`（高固定）/
-`force_low`（低固定）フラグファイル、解像度選択は `res_high` / `res_low`
-（WxH のみ）で、いずれもプラグインが書き watcher が毎ループ参照する。
-優先順位は `override` > `force_low` > 自動判定、解像度は
-`res_low` > `LOW_CMD`、`res_high` > ホーム自動学習。適用中の解像度変更は即再適用。
-
-## モード遷移フック（自宅⇄モバイルで他アプリ・デーモンも切替）
-
-低解像度への切替後（= 外出利用）/ ホーム復帰後（= 自宅利用）にフックが呼ばれる
-（手動トグル・自動検知どちらの経路でも発火）。連動を増やす方法は 2 つ:
-
-**1. hooks ディレクトリ（推奨・ネイティブ版）** —
-`~/.config/screenshare-res/hooks/on_low.d/` と `on_high.d/` に置いた
-実行可能ファイルが名前順に全実行される。追加＝ファイルを置く、削除＝消すだけ。
-例: モバイル利用中はスクロール反転（Scroll Reverser）を止める:
-
-```sh
-mkdir -p ~/.config/screenshare-res/hooks/{on_low.d,on_high.d}
-cat > ~/.config/screenshare-res/hooks/on_low.d/scroll-reverser <<'EOF'
-#!/bin/zsh
-osascript -e 'tell application "Scroll Reverser" to quit'
-EOF
-cat > ~/.config/screenshare-res/hooks/on_high.d/scroll-reverser <<'EOF'
-#!/bin/zsh
-open -ga "Scroll Reverser"
-EOF
-chmod +x ~/.config/screenshare-res/hooks/{on_low.d,on_high.d}/scroll-reverser
-```
-
-**2. config.zsh の関数（legacy 互換）** — `on_low()` / `on_high()` 関数を
-定義すると zsh 経由で呼ばれる（zsh 版・ネイティブ版とも対応）。
-
-フックの失敗は watcher 本体の動作に影響しない（ログに `!! hook ... failed`）。
-
-## ネイティブ版（Swift メニューバーアプリ）
-
-zsh watcher + SwiftBar + displayplacer を単一の Swift アプリに置き換えたもの。
-接続監視は sysctl、解像度制御は CoreGraphics 直叩きで**外部依存ゼロ**
-（displayplacer / SwiftBar 不要。ビルドに Xcode が必要なだけ）。
-
-```sh
-make native-build      # native/dist/ScreenshareRes.app を組み立て (ad-hoc 署名)
-make native-install    # legacy を停止して ~/Applications へ配置・起動
-make native-uninstall  # ネイティブ版を終了・削除
-# zsh 版へ戻す: make native-uninstall && make install && make swiftbar
-```
-
-- メニュー構成・ファイル契約（state/override/force_low/res_high/res_low）は
-  legacy と同一。`config.zsh` は不要（対象ディスプレイ自動検出・解像度は
-  メニュー選択・ホームは自動学習）。`on_low`/`on_high` フックは config.zsh に
-  定義があれば互換実行される
-- 低解像度が未選択のときの既定はホームの半分（同アスペクト・HiDPI 優先）
-- 常駐はメニューの「ログイン時に起動」（SMAppService）で設定
-- ホーム学習は UserDefaults（`com.wadap.screenshare-res.native`）に保持。
-  リセットは `defaults delete com.wadap.screenshare-res.native`
-
-## 制限・メモ
-
-- Tailscale 判定は **IPv4 (`100.64.0.0/10`) と IPv6 (`fd7a:115c:a1e0::/48`)**。
-  それ以外の経路で入る運用なら `is_tailscale_ip` を `tailscale whois` 判定に
-  差し替える
-- LaunchAgent は GUI ログインセッションで動くため、ホストは自分のユーザーで
-  ログインしたまま常時起動である必要がある
-- もし復帰解像度がおかしくなったら、自宅で `rm ~/.local/state/screenshare-res/home.cmd`
-  してから通常状態に戻せば再学習する
-
-## ロードマップ
-
-- [x] SwiftBar プラグイン化（メニューバー状態表示＋手動オーバーライド）
-- [x] ネイティブ Swift メニューバーアプリ（`netstat`/`displayplacer` 依存を
-      sysctl / CoreGraphics 直叩きへ置換）
+## License
+MIT

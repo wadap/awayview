@@ -1,0 +1,30 @@
+/* menu */
+"menu.no_display" = "⚠️ 対象ディスプレイが見つかりません";
+"menu.state" = "状態: %@";
+"menu.connection" = "接続: %@";
+"menu.connection.none" = "なし";
+"mode.auto" = "自動判定";
+"mode.high" = "高解像度（自宅）";
+"mode.low" = "低解像度（外出）";
+"state.home" = "ホーム解像度";
+"state.low" = "低解像度";
+"state.low_manual" = "低解像度に固定中%@";
+"state.override" = "高解像度に固定中%@";
+"res.high.title" = "高解像度: %@";
+"res.low.title" = "低解像度: %@";
+"res.high.default" = "自動学習%@";
+"res.low.default" = "既定（ホームの半分）";
+"menu.open_log" = "ログを開く";
+"menu.settings" = "設定…";
+"menu.quit" = "終了";
+
+/* settings */
+"settings.title" = "AwayView 設定";
+"settings.port" = "監視ポート:";
+"settings.cidrs" = "検知する接続元 IP 範囲（CIDR・1 行 1 件）:";
+"settings.cidrs.note" = "空にすると自動切替は無効。既定は Tailscale の範囲。";
+"settings.launch_at_login" = "ログイン時に起動";
+"settings.save" = "保存";
+"settings.saved" = "保存しました。数秒以内に反映されます。";
+"settings.error.port" = "ポートは 1〜65535 の整数で入力してください。";
+"settings.error.cidr" = "不正な CIDR: %@";

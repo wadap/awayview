@@ -26,14 +26,12 @@ if args.contains("--list-modes") {
 }
 
 if args.contains("--list-connections") {
-    let monitor = ConnectionMonitor()
+    let settings = SettingsStore()
+    let monitor = ConnectionMonitor(localPort: settings.port,
+                                    matcher: CIDRMatcher(settings.cidrs))
     let ips = monitor.establishedForeignIPs()
-    print("port 5900 ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
-    if let ts = monitor.tailscaleRemoteIP() {
-        print("tailscale remote: \(ts)")
-    } else {
-        print("tailscale remote: (none)")
-    }
+    print("port \(settings.port) ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
+    print("matched remote: \(monitor.remoteIP() ?? "(none)")")
     exit(0)
 }
 
@@ -69,13 +67,13 @@ if args.contains("--capture-home") {
 }
 
 if args.contains("--help") || args.contains("-h") {
-    print("usage: ScreenshareRes [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
+    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
     print("引数なしで起動するとメニューバーアプリとして常駐する")
     exit(0)
 }
 
 // 引数なし: メニューバーアプリとして常駐
-let stateDir = ProcessInfo.processInfo.environment["SCREENSHARE_RES_STATE_DIR"]
+let stateDir = ProcessInfo.processInfo.environment["AWAYVIEW_STATE_DIR"]
     .map { URL(fileURLWithPath: $0) }
 let app = NSApplication.shared
 let controller = AppController(stateDirectory: stateDir)

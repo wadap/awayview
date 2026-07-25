@@ -1,5 +1,5 @@
 import XCTest
-@testable import ScreenshareRes
+@testable import AwayView
 
 final class HooksTests: XCTestCase {
     var dir: URL!
@@ -9,7 +9,6 @@ final class HooksTests: XCTestCase {
         dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("ssr-hooks-\(UUID().uuidString)")
         Hooks.hooksDir = dir
-        Hooks.configPath = dir.appendingPathComponent("no-such-config.zsh").path  // zsh 互換経路は無効化
     }
 
     override func tearDown() {
