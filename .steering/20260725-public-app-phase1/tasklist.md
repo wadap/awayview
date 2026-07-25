@@ -1443,19 +1443,19 @@ git commit -m "docs: README を英語化 (README.ja.md 併設)、CLAUDE.md を A
 
 **Files:** なし（git 操作のみ）
 
-- [ ] **Step 1: 全テスト最終確認**
+- [x] **Step 1: 全テスト最終確認**
 
 Run: `make check && make test`
 Expected: 全 PASS
 
-- [ ] **Step 2: main へ merge**
+- [x] **Step 2: main へ merge**
 
 ```bash
 git checkout main
 git merge --no-ff phase1-awayview -m "merge: 公開アプリ化 Phase 1 — AwayView 汎用化"
 ```
 
-- [ ] **Step 3: push（SSH agent 不調のため gh HTTPS 経由）**
+- [x] **Step 3: push（SSH agent 不調のため gh HTTPS 経由）**
 
 ```bash
 git -c credential.helper='!gh auth git-credential' push https://github.com/wadap/screenshare-res.git main
@@ -1470,7 +1470,7 @@ Expected: push 成功
 
 **Files:** なし（運用作業。ユーザー立ち会いで実施）
 
-- [ ] **Step 1: legacy 残骸の掃除（冪等）**
+- [x] **Step 1: legacy 残骸の掃除（冪等）**
 
 ```bash
 launchctl bootout gui/$(id -u)/com.wadap.screenshare-res 2>/dev/null || true
@@ -1478,7 +1478,7 @@ rm -f ~/Library/LaunchAgents/com.wadap.screenshare-res.plist
 rm -f "$(defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null)/screenshare-res.5s.zsh" 2>/dev/null || true
 ```
 
-- [ ] **Step 2: 旧 native 版を停止・削除して AwayView を導入**
+- [x] **Step 2: 旧 native 版を停止・削除して AwayView を導入**
 
 ```bash
 pkill -x ScreenshareRes 2>/dev/null || true
@@ -1488,7 +1488,7 @@ make install
 
 Expected: メニューバーに 🏠 が出る（旧アイコンは消える）
 
-- [ ] **Step 3: 旧 state・hooks の移行**
+- [x] **Step 3: 旧 state・hooks の移行**
 
 ```bash
 [ -d ~/.config/screenshare-res/hooks ] && mkdir -p ~/.config/awayview && \
@@ -1499,7 +1499,7 @@ rm -rf ~/.local/state/screenshare-res
 （config.zsh の on_low/on_high 関数を使っていた場合は hooks ディレクトリ形式
 のスクリプトに手で移す — 現環境は 66a2360 で hooks ディレクトリ方式に移行済み）
 
-- [ ] **Step 4: 動作確認**
+- [x] **Step 4: 動作確認**
 
 ```bash
 tail -5 ~/.local/state/awayview/watch.log     # "watcher started (native)" が出る
@@ -1513,7 +1513,7 @@ cat ~/.local/state/awayview/state             # STATE="home"
 - 実リモート検証（iPhone/iPad から Tailscale 経由で画面共有 → 💻 に変わり
   低解像度化 → 切断 → 🏠 復帰）は次に外出時 or 手元の別デバイスで実施
 
-- [ ] **Step 5: steering の記録更新**
+- [x] **Step 5: steering の記録更新**
 
 `.steering/20260725-public-app-phase1/tasklist.md` のチェックボックスを全て更新し、
 実機移行で気づいたことがあれば `blockers.md` / `decisions.md` に記録して commit。
