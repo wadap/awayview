@@ -15,3 +15,16 @@
 - **2026-07-25 リネーム & public 化は notarize 検証成功後**。hardened
   runtime での動作問題が出た場合に private のまま調査できるようにする
 - **2026-07-25 バージョンは v1.0.0 始まり**
+- **2026-07-26 notarize 認証は App Store Connect API キー方式**。app-specific
+  password は組織アカウントで 401 が解消せず、API キー (Team Key, ロール
+  Developer) に切替えたら一発で通った。以後のマシン追加時もこの方式を使う
+- **2026-07-26 codesign --verify に --deep を付けない** (design.md からの
+  意図的逸脱)。ネスト実行物はデータのみのリソースバンドルだけで、実効性の
+  高い検証は notarize + spctl が担うため。final review で確認済み
+- **2026-07-26 publish は `--target $(git rev-parse HEAD)` を明示**。
+  gh release create の既定はリモート default branch の HEAD にタグを打つため、
+  push 忘れ時に stale commit へタグが付く事故を防ぐ
+- **2026-07-26 cask の depends_on は symbol 形式** (`macos: :ventura`)。
+  Homebrew 6 で文字列比較形式 (`">= :ventura"`) は deprecated。また
+  Homebrew 6 は初回利用の tap に `brew trust <tap>` を要求する (README には
+  記載不要と判断 — brew 自身がエラーメッセージで案内する)

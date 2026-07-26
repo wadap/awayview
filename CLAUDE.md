@@ -48,6 +48,10 @@ SwiftPM 単体 (Xcode プロジェクトなし)。`make build` が dist/AwayView
 
 - `make check` (型チェック) → `make test` (XCTest。DEVELOPER_DIR は設定済み) →
   `make install`
+- リリース: `make release VERSION=x.y.z` (署名 + notarize + staple + zip) →
+  push 後に `make publish VERSION=x.y.z` (GitHub Release)。アイコン再生成は
+  `make icon` (要 librsvg)。cask は wadap/homebrew-tap の Casks/awayview.rb
+  (version + sha256 を更新)
 - `swift test` を直接叩くときは
   `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` が必要
 - ログ: `tail -f ~/.local/state/awayview/watch.log`。遷移は `-> LOW` / `-> HIGH`

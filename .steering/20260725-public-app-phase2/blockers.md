@@ -1,14 +1,17 @@
 # Blockers / 要確認 — 公開アプリ化 Phase 2
 
-## ユーザー操作が必要（該当タスク直前に案内）
+## 解消済み (2026-07-26)
 
-- **Developer ID Application 証明書の発行**: Keychain に codesigning
-  identity 0 件（2026-07-25 確認）。Xcode → Settings → Accounts →
-  Manage Certificates から発行が最短
-- **notarytool 認証情報**: `xcrun notarytool store-credentials` で
-  App Store Connect API キー（推奨）か app-specific password を登録
+- ~~Developer ID Application 証明書~~: Xcode から発行済み
+  (`Developer ID Application: NANICA, K.K. (45F858C28S)`)
+- ~~notarytool 認証情報~~: app-specific password は 401 が解消せず、
+  **App Store Connect API キー方式**で解決 (プロファイル `awayview-notary`、
+  キーは `~/.private_keys/AuthKey_427TJ9K2H4.p8`)
+- ~~hardened runtime での CG / sysctl 動作~~: 署名済みバイナリで
+  `--list-modes` / `--list-connections` とも動作確認済み。entitlements 不要
 
-## 未検証
+## 未検証 (Phase 1 からの持ち越し)
 
-- hardened runtime 有効時の CoreGraphics 表示制御 / sysctl(pcblist_n) 動作
-- 実リモート自動切替（Phase 1 からの持ち越し。次の外出時に watch.log 確認）
+- **実リモートでの自動切替**: Tailscale 経由の実接続で
+  `-> LOW (remote connection)` が watch.log に出ることを次の外出時に確認
+  (文言は Phase 2 で `Tailscale remote` から変更済みなので grep はこの新文言で)

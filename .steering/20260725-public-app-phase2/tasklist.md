@@ -32,7 +32,7 @@
 
 現状バグ: `s.split(separator: "/")` は空要素を捨てるため `"100.64.0.0//10"` が `["100.64.0.0", "10"]` になり通ってしまう。
 
-- [ ] **Step 1: 失敗するテストを書く**
+- [x] **Step 1: 失敗するテストを書く**
 
 `Tests/AwayViewTests/CIDRMatcherTests.swift` の `testParseCIDRValidation()` 末尾に追記:
 
@@ -43,12 +43,12 @@
         XCTAssertNil(CIDRMatcher.parseCIDR("/10"))              // アドレス空
 ```
 
-- [ ] **Step 2: 失敗を確認**
+- [x] **Step 2: 失敗を確認**
 
 Run: `make test`
 Expected: FAIL（`"100.64.0.0//10"` と `"100.64.0.0/10/"` の 2 行で assert 失敗。split が空要素を捨てるため両方とも count 2 になり通ってしまう。残り 2 つは現実装でも nil）
 
-- [ ] **Step 3: 最小実装**
+- [x] **Step 3: 最小実装**
 
 `CIDRMatcher.swift` の `parseCIDR` を差し替え:
 
@@ -63,12 +63,12 @@ Expected: FAIL（`"100.64.0.0//10"` と `"100.64.0.0/10/"` の 2 行で assert �
     }
 ```
 
-- [ ] **Step 4: green 確認**
+- [x] **Step 4: green 確認**
 
 Run: `make test`
 Expected: 全テスト PASS（`Executed` 行で failures 0）
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 rtk git add Sources/AwayView/CIDRMatcher.swift Tests/AwayViewTests/CIDRMatcherTests.swift
@@ -88,7 +88,7 @@ rtk git commit -m "fix: CIDR パースを strict 化、// や空要素を拒否"
 
 CIDR は設定で任意範囲に変えられるのに、ログが `Tailscale remote` 固定なのを直す。ログ出力は AppController 内でテスト対象外のため TDD なし（挙動変更はログ文字列のみ）。
 
-- [ ] **Step 1: 文言変更**
+- [x] **Step 1: 文言変更**
 
 `MenuController.swift:64`:
 
@@ -96,17 +96,17 @@ CIDR は設定で任意範囲に変えられるのに、ログが `Tailscale rem
             case .low: writer.log("-> LOW (remote connection)")
 ```
 
-- [ ] **Step 2: ドキュメント内の旧文言を洗い出して更新**
+- [x] **Step 2: ドキュメント内の旧文言を洗い出して更新**
 
 Run: `rtk grep -rn "Tailscale remote" --include="*.md" .`
 `.steering/20260725-public-app-phase1/` 配下は歴史記録なので**変更しない**。README.md / README.ja.md / CLAUDE.md にヒットしたらその行だけ `-> LOW (remote connection)` に更新。
 
-- [ ] **Step 3: 型チェック**
+- [x] **Step 3: 型チェック**
 
 Run: `make check`
 Expected: Build complete
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add -A
@@ -125,7 +125,7 @@ rtk git commit -m "fix: watch.log の LOW 文言を CIDR 設定に依存しな�
 **Interfaces:**
 - Produces: strings キー `state.time_suffix`（`%@` = HH:mm）。`state.low_manual` / `state.override` の `%@` に渡る文字列を生成
 
-- [ ] **Step 1: strings に追加**
+- [x] **Step 1: strings に追加**
 
 `en.lproj/Localizable.strings` の `"state.override"` 行の下に:
 
@@ -139,7 +139,7 @@ rtk git commit -m "fix: watch.log の LOW 文言を CIDR 設定に依存しな�
 "state.time_suffix" = " (%@〜)";
 ```
 
-- [ ] **Step 2: ハードコードを置換**
+- [x] **Step 2: ハードコードを置換**
 
 `MenuController.swift` の `modeTimeSuffix()`:
 
@@ -152,12 +152,12 @@ rtk git commit -m "fix: watch.log の LOW 文言を CIDR 設定に依存しな�
     }
 ```
 
-- [ ] **Step 3: 型チェック + 実機確認**
+- [x] **Step 3: 型チェック + 実機確認**
 
 Run: `make check` → Expected: Build complete
 Run: `make install` → メニューで「低解像度に固定」を選び、状態行が「低解像度に固定中 (HH:mm〜)」（ja）になること。System Settings で言語を一時変更しての en 確認は省略可（strings の書式検証は目視）
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add Sources/AwayView/MenuController.swift Sources/AwayView/Resources
@@ -176,7 +176,7 @@ rtk git commit -m "fix: モード固定時刻のサフィックスをローカ�
 
 スコープ確定: (a) port 入力の前後空白を trim して受理し正規化表示、(b) `show()` が毎回 `center()` するのをやめ前回位置を記憶。「message 共有」は現実装（保存/ログイン項目エラーが同一 `message` 欄）が既に共有設計のため変更なし。
 
-- [ ] **Step 1: port trim**
+- [x] **Step 1: port trim**
 
 `save()` の先頭を変更:
 
@@ -197,7 +197,7 @@ rtk git commit -m "fix: モード固定時刻のサフィックスをローカ�
         portText = String(p)
 ```
 
-- [ ] **Step 2: ウィンドウ位置の記憶**
+- [x] **Step 2: ウィンドウ位置の記憶**
 
 `SettingsWindowController` を変更:
 
@@ -220,12 +220,12 @@ rtk git commit -m "fix: モード固定時刻のサフィックスをローカ�
     }
 ```
 
-- [ ] **Step 3: 型チェック + 実機確認**
+- [x] **Step 3: 型チェック + 実機確認**
 
 Run: `make check` → Expected: Build complete
 Run: `make install` → 設定を開く→動かす→閉じる→再度開く: 位置が保持される。ポートに ` 5900 ` を入力して保存: 受理され表示が `5900` になる
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add Sources/AwayView/SettingsWindow.swift
@@ -245,16 +245,16 @@ rtk git commit -m "fix: 設定ウィンドウの位置記憶とポート入力�
 **Interfaces:**
 - Produces: `make icon` が assets/AppIcon.icns を再生成。`make build` が Contents/Resources/AppIcon.icns を含む .app を組む
 
-- [ ] **Step 1: librsvg 確認**
+- [x] **Step 1: librsvg 確認**
 
 Run: `command -v rsvg-convert || brew install librsvg`
 
-- [ ] **Step 2: デザイン案の提示と選択（ユーザー対話）**
+- [x] **Step 2: デザイン案の提示と選択（ユーザー対話）**
 
 「外出先から自宅画面を覗く」モチーフで SVG 案を 2〜3 作成し（1024x1024 viewBox、macOS squircle 角丸 = 辺の約 22.5%）、各案を PNG プレビューしてユーザーに選んでもらう。選択案を `assets/icon.svg` として保存。
 プレビュー生成（scratchpad ディレクトリで、案ごとに）: `rsvg-convert -w 256 -h 256 <scratchpad>/icon-a.svg -o <scratchpad>/icon-a.png` → Read ツールで表示して選択を仰ぐ
 
-- [ ] **Step 3: Makefile に icon ターゲット追加**
+- [x] **Step 3: Makefile に icon ターゲット追加**
 
 ```make
 icon: ## assets/icon.svg から AppIcon.icns を生成 (要 librsvg)
@@ -274,7 +274,7 @@ icon: ## assets/icon.svg から AppIcon.icns を生成 (要 librsvg)
 	cp assets/AppIcon.icns $(APP)/Contents/Resources/
 ```
 
-- [ ] **Step 4: Info.plist にアイコン宣言**
+- [x] **Step 4: Info.plist にアイコン宣言**
 
 `CFBundlePackageType` の下に追加:
 
@@ -283,12 +283,12 @@ icon: ## assets/icon.svg から AppIcon.icns を生成 (要 librsvg)
 	<string>AppIcon</string>
 ```
 
-- [ ] **Step 5: 生成 + 実機確認**
+- [x] **Step 5: 生成 + 実機確認**
 
 Run: `make icon && make install`
 Expected: Finder で ~/Applications/AwayView.app にアイコンが出る（Dock は LSUIElement のため出ない。Finder / Get Info で確認）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 rtk git add assets Makefile Info.plist
@@ -306,12 +306,12 @@ rtk git commit -m "feat: アプリアイコンを追加 (SVG マスター + make
 
 現状 identity 0 件（2026-07-25 確認）。**両方ユーザー操作**なので、コマンドを提示して完了を待つ。
 
-- [ ] **Step 1: Developer ID Application 証明書の発行**
+- [x] **Step 1: Developer ID Application 証明書の発行**
 
 ユーザーに案内: Xcode → Settings → Accounts → (Apple ID 選択) → Manage Certificates… → 「+」→ **Developer ID Application**。
 確認: `security find-identity -v -p codesigning` に `Developer ID Application: <名前> (<TEAMID>)` が 1 件出る。TEAMID を控える
 
-- [ ] **Step 2: notarytool 認証プロファイル作成**
+- [x] **Step 2: notarytool 認証プロファイル作成**
 
 推奨は Apple ID + app-specific password（App Store Connect API キーより手順が短い）:
 1. https://account.apple.com → Sign-In and Security → App-Specific Passwords で発行
@@ -330,7 +330,7 @@ rtk git commit -m "feat: アプリアイコンを追加 (SVG マスター + make
 - Consumes: Task 6 の identity / `awayview-notary` プロファイル
 - Produces: `make release VERSION=x.y.z` → 署名 + notarize + staple 済み `dist/AwayView-x.y.z.zip`。`make publish VERSION=x.y.z` → GitHub Release 作成
 
-- [ ] **Step 1: Makefile に変数とターゲット追加**
+- [x] **Step 1: Makefile に変数とターゲット追加**
 
 変数部（`APP_DST` の下）:
 
@@ -369,13 +369,13 @@ publish: ## GitHub Release 作成 (VERSION=x.y.z、release 実行後に)
 
 補足: `build` の ad-hoc 署名は `codesign --force` で上書きされるため開発フローと共存できる。リソースバンドルは実行コードを含まないため個別署名不要。
 
-- [ ] **Step 2: dry run（publish 以外）**
+- [x] **Step 2: dry run（publish 以外）**
 
 Run: `make release VERSION=1.0.0`
 Expected: notarytool が `status: Accepted`、stapler が `The staple and validate action worked!`、spctl が `accepted` + `source=Notarized Developer ID`。
 失敗時: `xcrun notarytool log <submission-id> --keychain-profile awayview-notary` で理由確認（hardened runtime 由来の欠落 entitlement など）
 
-- [ ] **Step 3: hardened runtime 実機スモーク**
+- [x] **Step 3: hardened runtime 実機スモーク**
 
 ```bash
 dist/AwayView.app/Contents/MacOS/AwayView --list-modes
@@ -384,7 +384,7 @@ dist/AwayView.app/Contents/MacOS/AwayView --list-connections
 Expected: モード列挙と接続列挙が動く（sysctl pcblist_n が hardened runtime 下でも動作することの確認）。
 さらに `cp -R` で ~/Applications に入れ替えて（`make install` は ad-hoc 再署名してしまうので使わない: `pkill -x AwayView` → `rm -rf ~/Applications/AwayView.app` → `cp -R dist/AwayView.app ~/Applications/` → `open ~/Applications/AwayView.app`）メニューから低解像度適用 → 自動判定に戻す、が動くこと
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 rtk git add Makefile
@@ -403,14 +403,14 @@ rtk git commit -m "build: make release/publish を追加 (Developer ID 署名 + 
 - Consumes: Task 7 の notarize 成功（成功前に public 化しない）
 - Produces: `https://github.com/wadap/awayview`（public）。origin は HTTPS URL
 
-- [ ] **Step 1: 秘密情報の全履歴スキャン**
+- [x] **Step 1: 秘密情報の全履歴スキャン**
 
 ```bash
 rtk git log -p --all | grep -inE "api[_-]?key|secret|token|password|BEGIN.*PRIVATE KEY" | head -30
 ```
 Expected: 実害のあるヒットなし（変数名や doc 内の一般語のみ）。疑わしいヒットは user に提示して判断を仰ぐ。**実 secret が見つかったら public 化を中断**
 
-- [ ] **Step 2: README 更新**
+- [x] **Step 2: README 更新**
 
 README.md / README.ja.md に Homebrew インストール手順を追加（Task 9 完了前提の文面で書いてよい。同一リリースサイクル内）:
 
@@ -425,7 +425,7 @@ Or download the notarized app from [Releases](https://github.com/wadap/awayview/
 
 既存の `screenshare-res` URL 参照・`make install` 前提の手順を `awayview` に更新。CLAUDE.md の経緯 section に「Phase 2 で awayview に改名・public 化」を追記
 
-- [ ] **Step 3: Commit（リネーム前に push まで済ませる）**
+- [x] **Step 3: Commit（リネーム前に push まで済ませる）**
 
 ```bash
 rtk git add README.md README.ja.md CLAUDE.md
@@ -434,7 +434,7 @@ git -c credential.helper='!gh auth git-credential' push https://github.com/wadap
 git update-ref refs/remotes/origin/main $(git rev-parse HEAD)
 ```
 
-- [ ] **Step 4: リネーム + remote 更新 + public 化**
+- [x] **Step 4: リネーム + remote 更新 + public 化**
 
 ```bash
 gh repo rename awayview -R wadap/screenshare-res --yes
@@ -455,12 +455,12 @@ Expected: `"visibility": "PUBLIC"`, `"name": "awayview"`。
 - Consumes: Task 7 の `dist/AwayView-1.0.0.zip`（リネーム後も artifact はそのまま有効）
 - Produces: `https://github.com/wadap/awayview/releases/tag/v1.0.0` と zip の sha256
 
-- [ ] **Step 1: Release 作成**
+- [x] **Step 1: Release 作成**
 
 Run: `make publish VERSION=1.0.0`
 Expected: Release URL が出力される
 
-- [ ] **Step 2: sha256 を控える**
+- [x] **Step 2: sha256 を控える**
 
 Run: `shasum -a 256 dist/AwayView-1.0.0.zip`
 出力の hash を Task 10 の cask に使う
@@ -476,13 +476,13 @@ Run: `shasum -a 256 dist/AwayView-1.0.0.zip`
 - Consumes: Task 9 の Release URL と sha256
 - Produces: `brew tap wadap/tap && brew install --cask awayview` が通る
 
-- [ ] **Step 1: tap repo 作成**
+- [x] **Step 1: tap repo 作成**
 
 ```bash
 gh repo create homebrew-tap --public --clone ~/git/homebrew-tap
 ```
 
-- [ ] **Step 2: cask 定義**
+- [x] **Step 2: cask 定義**
 
 `~/git/homebrew-tap/Casks/awayview.rb`（`<SHA256>` は Task 9 の実値に置換）:
 
@@ -508,7 +508,7 @@ cask "awayview" do
 end
 ```
 
-- [ ] **Step 3: commit + push**
+- [x] **Step 3: commit + push**
 
 ```bash
 cd ~/git/homebrew-tap
@@ -517,7 +517,7 @@ rtk git commit -m "add awayview 1.0.0"
 git -c credential.helper='!gh auth git-credential' push https://github.com/wadap/homebrew-tap.git main
 ```
 
-- [ ] **Step 4: 手動設置分を撤去して brew でインストール（E2E）**
+- [x] **Step 4: 手動設置分を撤去して brew でインストール（E2E）**
 
 順に単独実行（複合コマンドにしない）:
 
@@ -534,7 +534,7 @@ open /Applications/AwayView.app
 ```
 Expected: install が `🍺 awayview was successfully installed!`、メニューバーに 🏠 が出る
 
-- [ ] **Step 5: E2E スモーク**
+- [x] **Step 5: E2E スモーク**
 
 メニューから「低解像度に固定」→ 解像度が下がる → 「自動判定」→ 復帰。設定ウィンドウで「ログイン時に起動」を入れ直す（アプリパスが /Applications に変わったため SMAppService を再登録）。
 Run: `tail -5 ~/.local/state/awayview/watch.log`
@@ -549,11 +549,11 @@ Expected: `-> LOW (manual)` と `-> HIGH (restored)` が記録されている
 - Modify: `.steering/20260725-public-app-phase2/blockers.md`（解消済みを更新、残課題記載）
 - Modify: `CLAUDE.md`（開発フローに `make release` / `make publish` / `make icon` を追記）
 
-- [ ] **Step 1: blockers.md 更新**
+- [x] **Step 1: blockers.md 更新**
 
 証明書・notary プロファイルのセットアップ完了を反映。実リモート検証（Phase 1 持ち越し）が未達なら残す
 
-- [ ] **Step 2: CLAUDE.md 開発フロー更新 + Commit**
+- [x] **Step 2: CLAUDE.md 開発フロー更新 + Commit**
 
 ```bash
 rtk git add -A
