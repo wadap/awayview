@@ -10,6 +10,7 @@
 "state.low" = "Low resolution";
 "state.low_manual" = "Pinned to low resolution%@";
 "state.override" = "Pinned to high resolution%@";
+"state.time_suffix" = " (since %@)";
 "res.high.title" = "High res: %@";
 "res.low.title" = "Low res: %@";
 "res.high.default" = "Auto-learned%@";

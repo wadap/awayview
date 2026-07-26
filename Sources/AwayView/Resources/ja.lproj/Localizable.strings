@@ -10,6 +10,7 @@
 "state.low" = "低解像度";
 "state.low_manual" = "低解像度に固定中%@";
 "state.override" = "高解像度に固定中%@";
+"state.time_suffix" = " (%@〜)";
 "res.high.title" = "高解像度: %@";
 "res.low.title" = "低解像度: %@";
 "res.high.default" = "自動学習%@";

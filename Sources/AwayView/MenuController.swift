@@ -61,7 +61,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         currentIP = ip
         if state != lastLogged {
             switch state {
-            case .low: writer.log("-> LOW (Tailscale remote)")
+            case .low: writer.log("-> LOW (remote connection)")
             case .lowManual: writer.log("-> LOW (manual)")
             case .override: writer.log("-> HIGH (override)")
             case .home: writer.log("-> HIGH (restored)")
@@ -136,7 +136,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let date = settings.modeChangedAt else { return "" }
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
-        return " (\(f.string(from: date))〜)"
+        return L("state.time_suffix", f.string(from: date))
     }
 
     private func disabled(_ title: String) -> NSMenuItem {
