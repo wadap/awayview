@@ -1,4 +1,4 @@
-.PHONY: build install uninstall check test
+.PHONY: build install uninstall check test icon
 
 # swift test に XCTest が要るため Xcode toolchain を明示 (CLT には無い)
 DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
@@ -12,6 +12,7 @@ build: ## .app バンドルを組み立てて ad-hoc 署名
 	cp .build/release/AwayView $(APP)/Contents/MacOS/
 	cp Info.plist $(APP)/Contents/
 	cp -R .build/release/AwayView_AwayView.bundle $(APP)/Contents/Resources/
+	cp assets/AppIcon.icns $(APP)/Contents/Resources/
 	codesign --force --sign - $(APP)
 	@echo "built: $(APP)"
 
@@ -32,3 +33,13 @@ check: ## 型チェック (debug build)
 
 test:
 	DEVELOPER_DIR=$(DEVELOPER_DIR) bash -o pipefail -c 'swift test 2>&1 | grep -E "Executed|error:"'
+
+icon: ## assets/icon.svg から AppIcon.icns を生成 (要 librsvg)
+	rm -rf dist/AppIcon.iconset
+	mkdir -p dist/AppIcon.iconset
+	for s in 16 32 128 256 512; do \
+	  rsvg-convert -w $$s -h $$s assets/icon.svg -o dist/AppIcon.iconset/icon_$${s}x$${s}.png; \
+	  rsvg-convert -w $$((s*2)) -h $$((s*2)) assets/icon.svg -o dist/AppIcon.iconset/icon_$${s}x$${s}@2x.png; \
+	done
+	iconutil -c icns dist/AppIcon.iconset -o assets/AppIcon.icns
+	@echo "generated: assets/AppIcon.icns"

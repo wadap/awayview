@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3F7E"/>
+      <stop offset="1" stop-color="#141F45"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD9A0"/>
+      <stop offset="1" stop-color="#FFB84D"/>
+    </linearGradient>
+    <clipPath id="lens"><circle cx="512" cy="540" r="282"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <g stroke="#8FA3E0" stroke-width="32" fill="none" stroke-linecap="round">
+    <path d="M 740 210 A 58 58 0 0 1 798 268"/>
+    <path d="M 740 152 A 116 116 0 0 1 856 268"/>
+  </g>
+  <circle cx="740" cy="268" r="22" fill="#8FA3E0"/>
+  <circle cx="512" cy="540" r="300" fill="url(#sky)" stroke="#F7F8FC" stroke-width="42"/>
+  <g clip-path="url(#lens)">
+    <rect x="212" y="700" width="600" height="140" fill="#1E2B58"/>
+    <path d="M 512 408 L 692 572 L 632 572 L 632 720 L 392 720 L 392 572 L 332 572 Z" fill="#1E2B58"/>
+    <rect x="472" y="596" width="80" height="86" rx="10" fill="#FFF3D6"/>
+  </g>
+</svg>
