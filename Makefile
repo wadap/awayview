@@ -68,4 +68,4 @@ release: ## 署名 + notarize + staple + 配布 zip (VERSION=x.y.z 必須)
 publish: ## GitHub Release 作成 (VERSION=x.y.z、release 実行後に)
 	@test -n "$(VERSION)" || { echo "usage: make publish VERSION=1.0.0"; exit 1; }
 	@test -f $(ZIP) || { echo "error: $(ZIP) not found. run make release first"; exit 1; }
-	gh release create v$(VERSION) $(ZIP) --title "AwayView v$(VERSION)" --generate-notes
+	gh release create v$(VERSION) $(ZIP) --title "AwayView v$(VERSION)" --generate-notes --target $$(git rev-parse HEAD)
