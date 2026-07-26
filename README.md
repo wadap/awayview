@@ -23,7 +23,16 @@ bigger, then switches back when you leave.
 - macOS 13+ / Apple silicon or Intel
 - Xcode toolchain to build from source (`swift build`)
 
-## Install (from source)
+## Install
+
+### Homebrew
+    brew tap wadap/tap
+    brew install --cask awayview
+
+Or download the notarized app from
+[Releases](https://github.com/wadap/awayview/releases).
+
+### From source
     git clone https://github.com/wadap/awayview && cd awayview
     make install       # builds dist/AwayView.app, copies to ~/Applications, launches
 

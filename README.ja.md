@@ -22,7 +22,16 @@ AwayView は Mac 側の解像度を下げて文字を大きくし、離れたら
 - macOS 13 以降 / Apple silicon・Intel いずれも可
 - ソースからビルドするには Xcode toolchain（`swift build`）が必要
 
-## インストール（ソースから）
+## インストール
+
+### Homebrew
+    brew tap wadap/tap
+    brew install --cask awayview
+
+または [Releases](https://github.com/wadap/awayview/releases) から
+notarize 済みアプリをダウンロード。
+
+### ソースから
     git clone https://github.com/wadap/awayview && cd awayview
     make install       # dist/AwayView.app をビルドし ~/Applications へコピー、起動
 

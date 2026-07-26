@@ -58,4 +58,6 @@ SwiftPM 単体 (Xcode プロジェクトなし)。`make build` が dist/AwayView
 
 zsh 版 watcher + SwiftBar プラグイン (screenshare-res) が前身。
 Phase 1 (66a2360 以降) でクリーンブレークして native 一本化・AwayView に改名。
-旧実装は git 履歴参照。配布 (署名/notarize/Homebrew) は Phase 2 で予定。
+旧実装は git 履歴参照。Phase 2 で repo を awayview に改名して public 化し、
+署名 + notarize (`make release VERSION=x.y.z` → `make publish VERSION=x.y.z`)
+と Homebrew cask (wadap/homebrew-tap) で配布。
