@@ -11,7 +11,10 @@ final class ObservationWriterTests: XCTestCase {
         dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("awayview-test-\(UUID().uuidString)")
         now = ISO8601DateFormatter().date(from: "2026-07-24T10:00:00+09:00")!
-        writer = ObservationWriter(directory: dir, now: { self.now })
+        // 期待値を JST 表記で書いているので TZ を固定する。
+        // 固定しないとランナー (UTC) とローカル (JST) で結果が変わる
+        writer = ObservationWriter(directory: dir, now: { self.now },
+                                   timeZone: TimeZone(identifier: "Asia/Tokyo")!)
     }
 
     override func tearDown() {

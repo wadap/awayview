@@ -9,18 +9,21 @@ final class ObservationWriter {
     private let now: () -> Date
     private var lastStateBody: String?
 
-    private static let timestampFormatter: DateFormatter = {
+    private let timestampFormatter: DateFormatter
+
+    /// timeZone は既定でシステム設定 (watch.log は手元で読むものなのでローカル時刻)。
+    /// テストが再現可能になるよう now と同じく注入できるようにしてある
+    init(directory: URL = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/state/awayview"),
+         now: @escaping () -> Date = { Date() },
+         timeZone: TimeZone = .current) {
+        self.directory = directory
+        self.now = now
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd HH:mm:ss"
         f.locale = Locale(identifier: "en_US_POSIX")
-        return f
-    }()
-
-    init(directory: URL = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".local/state/awayview"),
-         now: @escaping () -> Date = { Date() }) {
-        self.directory = directory
-        self.now = now
+        f.timeZone = timeZone
+        self.timestampFormatter = f
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 
@@ -29,7 +32,7 @@ final class ObservationWriter {
     func writeState(_ state: WatchState, remoteIP: String?) {
         let body = "STATE=\"\(state.rawValue)\"\nREMOTE_IP=\"\(remoteIP ?? "")\""
         guard body != lastStateBody else { return }
-        let stamp = Self.timestampFormatter.string(from: now())
+        let stamp = timestampFormatter.string(from: now())
         let full = body + "\nCHANGED_AT=\"\(stamp)\"\n"
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let tmp = url("state.tmp")
@@ -40,7 +43,7 @@ final class ObservationWriter {
 
     func log(_ message: String) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let stamp = Self.timestampFormatter.string(from: now())
+        let stamp = timestampFormatter.string(from: now())
         let line = "\(stamp) \(message)\n"
         let logURL = url("watch.log")
         if let handle = try? FileHandle(forWritingTo: logURL) {
