@@ -97,7 +97,9 @@ final class RealDisplayController: DisplayControlling {
            let id = displays.first(where: { DisplayController.uuidString(for: $0) == saved }) {
             return id
         }
-        let target = displays.first { CGDisplayIsBuiltin($0) == 0 } ?? displays[0]
+        // 型注釈は必須: 省くと Swift 6.1 が ?? を Optional 側のオーバーロードに
+        // 解決してしまう (6.3 では非 Optional に倒れるのでローカルでは気づけない)
+        let target: CGDirectDisplayID = displays.first { CGDisplayIsBuiltin($0) == 0 } ?? displays[0]
         if let uuid = DisplayController.uuidString(for: target) {
             defaults.set(uuid, forKey: "TargetDisplayUUID")
         }

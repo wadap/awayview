@@ -11,9 +11,11 @@ concurrency:
 
 jobs:
   build:
+    # ローカルのリリースビルドは Swift 6.3 / SDK 26 なので、CI はあえて
+    # 一世代前 (Swift 6.1 / SDK 15) を踏ませて移植性の後退を検出する
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Show toolchain
         run: swift --version
