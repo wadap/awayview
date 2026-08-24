@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version
+
+      - name: Type check
+        run: make check
+
+      - name: Test
+        run: make test
+
+      # swift build だけでは Bundle.module 用の
+      # AwayView_AwayView.bundle のコピー漏れを検出できないため、
+      # .app の組み立てまで CI で通す
+      - name: Assemble .app
+        run: make build
+
+      - name: Verify bundle layout
+        run: |
+          test -x dist/AwayView.app/Contents/MacOS/AwayView
+          test -d dist/AwayView.app/Contents/Resources/AwayView_AwayView.bundle
+          test -f dist/AwayView.app/Contents/Resources/AppIcon.icns
+          codesign --verify --deep --strict dist/AwayView.app

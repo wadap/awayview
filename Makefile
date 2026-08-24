@@ -6,6 +6,9 @@ APP     = dist/AwayView.app
 APP_DST = $(HOME)/Applications/AwayView.app
 SIGN_ID ?= $(shell security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $$2; exit}')
 NOTARY_PROFILE ?= awayview-notary
+# バージョンの正は Info.plist。VERSION= を明示した場合は release で一致を検証する
+PLIST_VERSION = $(shell /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist)
+VERSION ?= $(PLIST_VERSION)
 ZIP = dist/AwayView-$(VERSION).zip
 
 build: ## .app バンドルを組み立てて ad-hoc 署名
@@ -47,13 +50,13 @@ icon: ## assets/icon.svg から AppIcon.icns を生成 (要 librsvg)
 	iconutil -c icns dist/AppIcon.iconset -o assets/AppIcon.icns
 	@echo "generated: assets/AppIcon.icns"
 
-release: ## 署名 + notarize + staple + 配布 zip (VERSION=x.y.z 必須)
-	@test -n "$(VERSION)" || { echo "usage: make release VERSION=1.0.0"; exit 1; }
+release: ## 署名 + notarize + staple + 配布 zip (版は Info.plist から)
+	@test "$(VERSION)" = "$(PLIST_VERSION)" || { \
+	  echo "error: VERSION=$(VERSION) but Info.plist says $(PLIST_VERSION)"; \
+	  echo "       バージョンの正は Info.plist。先にそちらを更新すること"; exit 1; }
 	@test -n "$(SIGN_ID)" || { echo "error: Developer ID Application identity not found"; exit 1; }
 	$(MAKE) test
 	$(MAKE) build
-	plutil -replace CFBundleShortVersionString -string "$(VERSION)" $(APP)/Contents/Info.plist
-	plutil -replace CFBundleVersion -string "$(VERSION)" $(APP)/Contents/Info.plist
 	codesign --force --options runtime --timestamp --sign "$(SIGN_ID)" $(APP)
 	codesign --verify --strict --verbose=2 $(APP)
 	rm -f $(ZIP)
@@ -65,7 +68,7 @@ release: ## 署名 + notarize + staple + 配布 zip (VERSION=x.y.z 必須)
 	spctl -a -vv --type execute $(APP)
 	@echo "release artifact: $(ZIP)"
 
-publish: ## GitHub Release 作成 (VERSION=x.y.z、release 実行後に)
-	@test -n "$(VERSION)" || { echo "usage: make publish VERSION=1.0.0"; exit 1; }
+publish: ## GitHub Release 作成 (版は Info.plist から、release 実行後に)
+	@test "$(VERSION)" = "$(PLIST_VERSION)" || { echo "error: VERSION=$(VERSION) but Info.plist says $(PLIST_VERSION)"; exit 1; }
 	@test -f $(ZIP) || { echo "error: $(ZIP) not found. run make release first"; exit 1; }
 	gh release create v$(VERSION) $(ZIP) --title "AwayView v$(VERSION)" --generate-notes --target $$(git rev-parse HEAD)
