@@ -6,7 +6,13 @@ import XCTest
 
 final class MockConnection: ConnectionObserving {
     var ip: String?
-    func remoteIP() -> String? { ip }
+    /// nil でない間は ip を無視して この値を返す (列挙失敗の再現用)
+    var forced: ConnectionProbe?
+    func probe() -> ConnectionProbe {
+        if let forced { return forced }
+        if let ip { return .remote(ip) }
+        return ConnectionProbe.none
+    }
 }
 
 final class MockDisplay: DisplayControlling {
@@ -50,6 +56,7 @@ final class StateMachineTests: XCTestCase {
     var states: [(WatchState, String?)] = []
     var lowHooks = 0
     var highHooks = 0
+    var unavailableCount = 0
     var sm: StateMachine!
 
     override func setUp() {
@@ -60,11 +67,13 @@ final class StateMachineTests: XCTestCase {
         states = []
         lowHooks = 0
         highHooks = 0
+        unavailableCount = 0
         sm = StateMachine(connection: conn, display: display, flags: flags) { [weak self] state, ip in
             self?.states.append((state, ip))
         }
         sm.onLowApplied = { [weak self] in self?.lowHooks += 1 }
         sm.onHighRestored = { [weak self] in self?.highHooks += 1 }
+        sm.onProbeUnavailable = { [weak self] in self?.unavailableCount += 1 }
     }
 
     private var lastState: WatchState? { states.last?.0 }
@@ -219,6 +228,55 @@ final class StateMachineTests: XCTestCase {
     }
 
     // --- helper -----------------------------------------------------------
+    // 13) 列挙失敗 (不明) を「接続なし」に倒さない。
+    //     low 中に不明になっても復帰を試みない (試みても画面共有中は CG に
+    //     拒否され、10 秒ごとに無音でリトライし続ける原因になる)
+    func testUnavailableProbeDoesNotRestoreWhileLow() {
+        goLow()
+        let restoresBefore = display.count("restore")
+        conn.forced = .unavailable
+        sm.tick()
+        sm.tick()
+        XCTAssertEqual(display.count("restore"), restoresBefore,
+                       "不明の間は復帰を試みない")
+        XCTAssertEqual(lastState, .low, "状態は low のまま据え置く")
+    }
+
+    // 14) home 中に不明になっても home を再確認しない。
+    //     特に capture(follow) を走らせない (不明な瞬間の配置を学習させない)
+    func testUnavailableProbeDoesNotCaptureWhileHome() {
+        sm.tick()
+        precondition(lastState == .home)
+        let capturesBefore = display.count("capture:follow")
+        conn.forced = .unavailable
+        sm.tick()
+        XCTAssertEqual(display.count("capture:follow"), capturesBefore,
+                       "不明の間はホーム追従 capture をしない")
+    }
+
+    // 15) 不明は SETTLE の二段階確認を巻き戻さない。
+    //     remote → unavailable → remote は「連続 2 回の肯定的観測」として扱う
+    func testUnavailableProbeDoesNotResetSettling() {
+        sm.tick()                        // home
+        conn.ip = "100.99.1.2"
+        sm.tick()                        // 一段階目
+        conn.forced = .unavailable
+        sm.tick()                        // 不明: 何もしない
+        conn.forced = nil
+        sm.tick()                        // 二段階目として成立する
+        XCTAssertEqual(lastState, .low)
+        XCTAssertEqual(display.count("applyLow"), 1)
+    }
+
+    // 16) 不明は観測可能にする (無音で増幅させない)
+    func testUnavailableProbeIsReported() {
+        sm.tick()
+        conn.forced = .unavailable
+        sm.tick()
+        sm.tick()
+        XCTAssertEqual(unavailableCount, 2)
+    }
+
     private func goLow() {
         sm.tick()
         conn.ip = "100.99.1.2"

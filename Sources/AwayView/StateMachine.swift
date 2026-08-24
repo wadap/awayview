@@ -10,9 +10,16 @@ import Foundation
 //   - 適用中の res_low/res_high 変更は appliedDescriptor との差分で検出し即再適用
 //   - フック: applyLow / restoreHome の成功のたびに発火 (zsh 版 run_hook と同じ)
 
+/// 接続の観測結果。列挙に失敗した「不明」を「接続なし」と区別する。
+/// Optional<String> だと両者が nil に潰れ、一過性の列挙失敗が「切断」に化ける
+enum ConnectionProbe: Equatable {
+    case remote(String)   // 監視ポートへ ESTABLISHED している設定 CIDR 内の接続元
+    case none             // 接続なし (列挙自体は成功した)
+    case unavailable      // 列挙に失敗した = 判定不能
+}
+
 protocol ConnectionObserving {
-    /// 監視ポートへ ESTABLISHED している設定 CIDR 内の接続元 IP (なければ nil)
-    func remoteIP() -> String?
+    func probe() -> ConnectionProbe
 }
 
 enum RestoreResult {
@@ -56,6 +63,8 @@ final class StateMachine {
     /// 遷移成功フック (zsh 版 on_low / on_high 相当)
     var onLowApplied: (() -> Void)?
     var onHighRestored: (() -> Void)?
+    /// 接続の列挙に失敗した tick (無音にせず観測できるようにする)
+    var onProbeUnavailable: (() -> Void)?
 
     private var last: Last = .unknown
     private var applied = ""          // 適用済みレイアウトの記述子 (再適用判定用)
@@ -72,7 +81,8 @@ final class StateMachine {
     }
 
     func tick() {
-        let remoteIP = connection.remoteIP()
+        let probe = connection.probe()
+        let remoteIP: String? = if case .remote(let ip) = probe { ip } else { nil }
 
         if flags.overrideHigh {
             settling = false
@@ -85,6 +95,11 @@ final class StateMachine {
             if ensureLow() {
                 onStateChange(.lowManual, remoteIP)
             }
+        } else if case .unavailable = probe {
+            // 判定不能: 前 tick の判定を維持する。ここを「接続なし」に倒すと
+            // 画面共有が生きたまま復帰を試み、CG に拒否され、tick ごとに
+            // 無音でリトライし続ける (settling も巻き戻さない)
+            onProbeUnavailable?()
         } else if let ip = remoteIP {
             if last == .low {
                 settling = false

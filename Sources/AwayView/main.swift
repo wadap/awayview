@@ -31,7 +31,12 @@ if args.contains("--list-connections") {
                                     matcher: CIDRMatcher(settings.cidrs))
     let ips = monitor.establishedForeignIPs()
     print("port \(settings.port) ESTABLISHED foreign IPs: \(ips.isEmpty ? "(none)" : ips.joined(separator: ", "))")
-    print("matched remote: \(monitor.remoteIP() ?? "(none)")")
+    let matched: String = switch monitor.probe() {
+    case .remote(let ip): ip
+    case .none: "(none)"
+    case .unavailable: "(enumeration failed)"
+    }
+    print("matched remote: \(matched)")
     exit(0)
 }
 

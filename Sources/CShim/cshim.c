@@ -1,6 +1,7 @@
 #include "cshim.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -84,12 +85,37 @@ int css_list_established_foreign(uint16_t local_port, char *out, size_t out_len)
     if (out == NULL || out_len == 0) return -1;
     out[0] = '\0';
 
+    /* サイズ取得と本取得の間にソケットテーブルが増えると本取得が ENOMEM で
+       落ちる。ここで諦めると呼び出し側からは「接続 0 件」と見分けが付かず、
+       画面共有中でも「切断」と判定されてしまう。余裕を広げながらやり直す。 */
+    char *buf = NULL;
     size_t len = 0;
-    if (sysctlbyname("net.inet.tcp.pcblist_n", NULL, &len, NULL, 0) < 0) return -1;
-    len += len / 8; /* 取得までに増える分の余裕 */
-    char *buf = malloc(len);
-    if (buf == NULL) return -1;
-    if (sysctlbyname("net.inet.tcp.pcblist_n", buf, &len, NULL, 0) < 0) {
+    int fetched = 0;
+
+    for (int attempt = 0; attempt < 4 && !fetched; attempt++) {
+        size_t need = 0;
+        if (sysctlbyname("net.inet.tcp.pcblist_n", NULL, &need, NULL, 0) < 0) {
+            free(buf);
+            return -1;
+        }
+        need += (need / 8) << attempt; /* 余裕を 1/8, 1/4, 1/2, 1 と広げる */
+
+        char *grown = realloc(buf, need);
+        if (grown == NULL) {
+            free(buf);
+            return -1;
+        }
+        buf = grown;
+        len = need;
+
+        if (sysctlbyname("net.inet.tcp.pcblist_n", buf, &len, NULL, 0) == 0) {
+            fetched = 1;
+        } else if (errno != ENOMEM) {
+            free(buf);
+            return -1;
+        }
+    }
+    if (!fetched) {
         free(buf);
         return -1;
     }

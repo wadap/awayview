@@ -35,6 +35,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         machine.onLowApplied = { Hooks.run("on_low") }
         machine.onHighRestored = { Hooks.run("on_high") }
+        // 列挙不能は状態遷移ではないので writeState はせず、ログにだけ残す。
+        // 連続すると sysctl 側の恒常的な問題を示す
+        machine.onProbeUnavailable = { [writer] in
+            writer.log("!! connection probe unavailable (holding previous state)")
+        }
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🏠"
