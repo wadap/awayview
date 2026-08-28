@@ -46,9 +46,10 @@ The menu also shows the running version and checks GitHub for newer releases
 (daily, and on demand). If AwayView was installed with Homebrew it hands you
 the `brew upgrade` command rather than replacing itself; installed any other
 way, it downloads the notarized build, verifies its signature, and restarts.
-AwayView will not restart itself while the display is lowered: switch back to
-the home resolution first, or the update will simply take effect the next time
-you launch it. Automatic checking can be turned off in Settings.
+AwayView will not start an update while the display is lowered — switch back to
+the home resolution first. If the display happens to lower while an update is
+already downloading, the new version is installed but not started, and takes
+effect the next time you launch AwayView. Automatic checking can be turned off in Settings.
 
 ## Settings
 Menu → Settings…: watched port, remote CIDR ranges (one per line; empty list
