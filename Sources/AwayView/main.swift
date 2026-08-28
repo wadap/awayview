@@ -71,8 +71,41 @@ if args.contains("--capture-home") {
     exit(1)
 }
 
+// 実機検証用: 更新チェックと適用を CLI から叩ける (ユニットテストの届かない範囲)
+if args.contains("--check-update") {
+    let current = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
+    print("current: \(current)")
+    let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: current)
+    switch checker.check() {
+    case .upToDate: print("up to date"); exit(0)
+    case .available(let r): print("available: \(r.version) \(r.downloadURL)"); exit(0)
+    case .failed(let why): print("check FAILED: \(why)"); exit(1)
+    }
+}
+
+if args.contains("--install-update") {
+    // .build/release/AwayView のような素の実行ファイルでは bundleURL が
+    // 親ディレクトリを指す。そのまま置換すると無関係なディレクトリを壊すので拒否する
+    guard Bundle.main.bundleURL.pathExtension == "app" else {
+        print("refusing: --install-update only works from inside AwayView.app")
+        exit(1)
+    }
+    let current = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
+    let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: current)
+    UpdateInstaller.log = { print($0) }
+    switch checker.check() {
+    case .upToDate: print("up to date"); exit(0)
+    case .failed(let why): print("check FAILED: \(why)"); exit(1)
+    case .available(let release):
+        switch UpdateInstaller.install(release) {
+        case .ok: print("installed \(release.version)"); exit(0)
+        case .failed(let why): print("install FAILED: \(why)"); exit(1)
+        }
+    }
+}
+
 if args.contains("--help") || args.contains("-h") {
-    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore]")
+    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore | --check-update | --install-update]")
     print("引数なしで起動するとメニューバーアプリとして常駐する")
     exit(0)
 }
