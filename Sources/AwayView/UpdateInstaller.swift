@@ -18,6 +18,13 @@ enum UpdateInstaller {
 
     static func install(_ release: Release,
                         bundleURL: URL = Bundle.main.bundleURL) -> InstallOutcome {
+        // .build/release/AwayView のような素の実行ファイルでは bundleURL が
+        // 親ディレクトリを指す。ダウンロード前に弾く (呼び出し元の CLI 側の
+        // チェックだけに頼らない。Task 8 はここをデフォルト引数で呼ぶ)
+        guard bundleURL.pathExtension == "app" else {
+            return .failed("bundleURL is not a .app bundle: \(bundleURL.path)")
+        }
+
         let fm = FileManager.default
         let work = fm.temporaryDirectory
             .appendingPathComponent("awayview-update-\(UUID().uuidString)")
@@ -72,8 +79,9 @@ enum UpdateInstaller {
         try? run("/usr/bin/open", ["-n", bundleURL.path])
     }
 
-    // Developer ID 署名で、かつ leaf 証明書の OU が自分の Team ID であること。
-    // notarize 済みバンドルは staple されているので、この検証を通れば配布物として正当
+    // Developer ID 署名が有効で、leaf 証明書の OU が自分の Team ID であることだけを
+    // 見る。notarization チケットの有無や証明書失効は見ていない (別チェック) ので、
+    // ここを通っても「notarize 済み」の証明にはならない
     private static func verifySignature(at url: URL) -> Bool {
         var staticCode: SecStaticCode?
         guard SecStaticCodeCreateWithPath(url as CFURL, [], &staticCode) == errSecSuccess,
@@ -84,7 +92,11 @@ enum UpdateInstaller {
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let req = requirement else { return false }
 
-        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
+        // strictValidate: ネットワーク経由で取得した zip なので、シールされていない
+        // 余分なファイルや symlink 差し替えを見逃さないようにする
+        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures
+            | kSecCSCheckNestedCode
+            | kSecCSStrictValidate)
         return SecStaticCodeCheckValidity(code, flags, req) == errSecSuccess
     }
 

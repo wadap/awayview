@@ -73,7 +73,7 @@ if args.contains("--capture-home") {
 
 // 実機検証用: 更新チェックと適用を CLI から叩ける (ユニットテストの届かない範囲)
 if args.contains("--check-update") {
-    let current = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
+    let current: AppVersion = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
     print("current: \(current)")
     let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: current)
     switch checker.check() {
@@ -90,7 +90,7 @@ if args.contains("--install-update") {
         print("refusing: --install-update only works from inside AwayView.app")
         exit(1)
     }
-    let current = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
+    let current: AppVersion = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
     let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: current)
     UpdateInstaller.log = { print($0) }
     switch checker.check() {
