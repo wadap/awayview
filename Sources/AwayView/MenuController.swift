@@ -18,6 +18,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let version = AppVersion.current()
     private var pendingRelease: Release?
     private var isChecking = false
+    private var isInstalling = false
     private var updateTimer: DispatchSourceTimer?
 
     init(stateDirectory: URL? = nil) {
@@ -128,19 +129,23 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func checkFinished(_ result: UpdateCheckResult, manual: Bool) {
         isChecking = false
-        settings.lastCheckedAt = Date()
         switch result {
         case .upToDate:
+            // 確認が成立したときだけ次回起点を進める。失敗を「確認済み」と
+            // 混同すると v1.0.0 の sysctl 誤判定と同じ形の穴になる
+            settings.lastCheckedAt = Date()
             pendingRelease = nil
             writer.log("update check: up to date")
             if manual, let version {
                 alert(L("update.up_to_date", version.description))
             }
         case .available(let release):
+            settings.lastCheckedAt = Date()
             pendingRelease = release
             writer.log("update check: \(release.version) available")
         case .failed(let reason):
-            // 確認できなかっただけ。watcher は止めない (hooks の失敗と同じ規律)
+            // 確認できなかっただけ。watcher は止めない (hooks の失敗と同じ規律)。
+            // lastCheckedAt は進めない — 次の 1 時間 tick でまた試す
             writer.log("!! update check failed: \(reason)")
             if manual { alert(L("update.failed", reason)) }
         }
@@ -160,13 +165,30 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func installUpdate() {
         guard let release = pendingRelease else { return }
         // 低解像度のまま再起動すると、その解像度をホームとして誤学習しうる。
-        // 適用がユーザー操作起点でも、リモート接続中に押される可能性は残るので状態で塞ぐ
-        guard currentState == .home else {
+        // .override はホーム解像度を維持したまま毎 tick 追従する状態なので許可し、
+        // 実際に下がっている .low / .lowManual だけを塞ぐ (将来状態が増えたときに
+        // 見落とさないよう「許可する側」ではなく「塞ぐ側」を明示する)
+        switch currentState {
+        case .low, .lowManual:
             alert(L("update.blocked_low"))
             return
+        case .home, .override:
+            break
         }
+        guard !isInstalling else { return }
+        isInstalling = true
         writer.log("update: installing \(release.version)")
-        switch UpdateInstaller.install(release) {
+        // install はネットワーク取得 + ditto + 署名検証を含み同期でブロックする。
+        // main で回すと 3 秒 tick の watcher も一緒に止まってしまうので背景キューへ
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let outcome = UpdateInstaller.install(release)
+            DispatchQueue.main.async { self?.installFinished(outcome, release: release) }
+        }
+    }
+
+    private func installFinished(_ outcome: InstallOutcome, release: Release) {
+        isInstalling = false
+        switch outcome {
         case .ok:
             UpdateInstaller.relaunch()
             NSApp.terminate(nil)
@@ -196,6 +218,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func updateMenuItem() -> NSMenuItem {
+        if isInstalling {
+            return disabled(L("menu.installing"))
+        }
         if isChecking {
             return disabled(L("menu.checking"))
         }

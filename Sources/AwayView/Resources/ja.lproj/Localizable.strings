@@ -20,6 +20,7 @@
 "menu.version" = "AwayView %@";
 "menu.check_updates" = "更新を確認…";
 "menu.checking" = "更新を確認中…";
+"menu.installing" = "更新中…";
 "menu.update_available" = "v%@ に更新";
 "menu.update_available_brew" = "v%@ が利用可能 — brew のコマンドをコピー";
 "menu.quit" = "終了";

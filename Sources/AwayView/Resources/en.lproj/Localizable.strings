@@ -20,6 +20,7 @@
 "menu.version" = "AwayView %@";
 "menu.check_updates" = "Check for Updates…";
 "menu.checking" = "Checking for updates…";
+"menu.installing" = "Updating…";
 "menu.update_available" = "Update to v%@";
 "menu.update_available_brew" = "v%@ available — copy brew command";
 "menu.quit" = "Quit AwayView";
