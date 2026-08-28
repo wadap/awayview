@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var portText: String
     @State private var cidrText: String
     @State private var launchAtLogin: Bool
+    @State private var autoCheckUpdates: Bool
     @State private var message: String?
     @State private var isError = false
 
@@ -41,6 +42,7 @@ struct SettingsView: View {
         _portText = State(initialValue: String(settings.port))
         _cidrText = State(initialValue: settings.cidrs.joined(separator: "\n"))
         _launchAtLogin = State(initialValue: SMAppService.mainApp.status == .enabled)
+        _autoCheckUpdates = State(initialValue: settings.autoCheckEnabled)
     }
 
     var body: some View {
@@ -73,6 +75,11 @@ struct SettingsView: View {
                         isError = true
                         launchAtLogin = SMAppService.mainApp.status == .enabled
                     }
+                }
+
+            Toggle(L("settings.auto_check"), isOn: $autoCheckUpdates)
+                .onChange(of: autoCheckUpdates) { enabled in
+                    settings.autoCheckEnabled = enabled
                 }
 
             HStack {
