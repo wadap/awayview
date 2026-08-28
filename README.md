@@ -49,7 +49,8 @@ way, it downloads the notarized build, verifies its signature, and restarts.
 AwayView will not start an update while the display is lowered — switch back to
 the home resolution first. If the display happens to lower while an update is
 already downloading, the new version is installed but not started, and takes
-effect the next time you launch AwayView. Automatic checking can be turned off in Settings.
+effect the next time you launch AwayView. Automatic checking can be turned off
+in Settings.
 
 ## Settings
 Menu → Settings…: watched port, remote CIDR ranges (one per line; empty list
