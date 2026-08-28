@@ -12,3 +12,6 @@ config.zsh
 # Swift build artifacts
 .build/
 dist/
+
+# subagent-driven-development の作業記録 (git の外)
+/.superpowers/
