@@ -73,4 +73,21 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertNil(store.resLow)
         XCTAssertNil(store.resHigh)
     }
+
+    // 未設定なら自動チェックは有効。明示的に false を書いたときだけ無効
+    func testAutoCheckDefaultsToEnabled() {
+        XCTAssertTrue(store.autoCheckEnabled)
+        store.autoCheckEnabled = false
+        XCTAssertFalse(store.autoCheckEnabled)
+        store.autoCheckEnabled = true
+        XCTAssertTrue(store.autoCheckEnabled)
+    }
+
+    func testLastCheckedAtRoundTrip() {
+        XCTAssertNil(store.lastCheckedAt)
+        store.lastCheckedAt = now
+        XCTAssertEqual(store.lastCheckedAt, now)
+        store.lastCheckedAt = nil
+        XCTAssertNil(store.lastCheckedAt)
+    }
 }

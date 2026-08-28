@@ -6,7 +6,8 @@ enum WatchMode {
 
 // UserDefaults ベースの設定と手動モード。旧ファイルフラグ
 // (override / force_low / res_high / res_low) の後継。StateMachine へは
-// FlagReading として渡す。キー: Port / CIDRs / Mode / ModeChangedAt / ResLow / ResHigh
+// FlagReading として渡す。キー: Port / CIDRs / Mode / ModeChangedAt / ResLow /
+// ResHigh / AutoCheckUpdates / LastCheckedAt
 final class SettingsStore: FlagReading {
     static let suiteName = "com.wadap.AwayView"
     static let defaultPort: UInt16 = 5900
@@ -69,6 +70,24 @@ final class SettingsStore: FlagReading {
 
     func setResLow(_ res: String?) { setOrRemove("ResLow", res) }
     func setResHigh(_ res: String?) { setOrRemove("ResHigh", res) }
+
+    // --- 更新 -----------------------------------------------------------
+
+    /// 既定は有効。UserDefaults に未登録のとき integer/bool の既定 false と区別するため
+    /// object 経由で読む
+    var autoCheckEnabled: Bool {
+        get { defaults.object(forKey: "AutoCheckUpdates") as? Bool ?? true }
+        set { defaults.set(newValue, forKey: "AutoCheckUpdates") }
+    }
+
+    /// 最終チェック時刻。再起動を繰り返しても過剰にチェックしないための記録
+    var lastCheckedAt: Date? {
+        get { defaults.object(forKey: "LastCheckedAt") as? Date }
+        set {
+            if let newValue { defaults.set(newValue, forKey: "LastCheckedAt") }
+            else { defaults.removeObject(forKey: "LastCheckedAt") }
+        }
+    }
 
     private func setOrRemove(_ key: String, _ value: String?) {
         if let value { defaults.set(value, forKey: key) }
