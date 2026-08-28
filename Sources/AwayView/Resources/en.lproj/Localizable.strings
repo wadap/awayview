@@ -17,6 +17,11 @@
 "res.low.default" = "Default (half of home)";
 "menu.open_log" = "Open Log";
 "menu.settings" = "Settings…";
+"menu.version" = "AwayView %@";
+"menu.check_updates" = "Check for Updates…";
+"menu.checking" = "Checking for updates…";
+"menu.update_available" = "Update to v%@";
+"menu.update_available_brew" = "v%@ available — copy brew command";
 "menu.quit" = "Quit AwayView";
 
 /* settings */
@@ -29,3 +34,13 @@
 "settings.saved" = "Saved. Applies within a few seconds.";
 "settings.error.port" = "Port must be an integer between 1 and 65535.";
 "settings.error.cidr" = "Invalid CIDR: %@";
+
+/* updates */
+"settings.auto_check" = "Check for updates automatically";
+"update.up_to_date" = "AwayView %@ is the latest version.";
+"update.failed" = "Could not check for updates: %@";
+"update.copied" = "Copied: %@\nRun it in Terminal to update.";
+"update.blocked_low" = "AwayView is at the low resolution right now. Switch back to the home resolution first, then update — restarting while lowered can make the app mis-learn your home resolution.";
+"update.install_failed" = "Update failed: %@\nOpen the Releases page to update manually.";
+"update.open_releases" = "Open Releases Page";
+"update.ok" = "OK";
