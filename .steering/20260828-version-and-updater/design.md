@@ -82,7 +82,8 @@ Homebrew 経路でアプリが自分を置き換えると、brew 側は旧版の
 ## README
 
 Homebrew の導線は en/ja 双方に既にある。追記は Homebrew 6 が初回利用の tap に
-要求する `brew trust wadap/tap` の一行。これが無いと現状の手順は失敗する。
+要求する `brew trust --tap wadap/tap` の一行 (Homebrew 6.0.20 で確認)。
+これが無いと現状の手順は失敗する。
 
 ## A. 既存パターンとの差分
 
@@ -97,7 +98,10 @@ Homebrew の導線は en/ja 双方に既にある。追記は Homebrew 6 が初�
 - 文言は `L()` 経由で en/ja 両方に追加
 - メニュー項目は `menuNeedsUpdate` 内で構築する (開くたび全再構築)
 - シェルアウトしない。brew 判定はファイル存在確認、署名検証は Security.framework、
-  クリップボードは `NSPasteboard`
+  クリップボードは `NSPasteboard`。
+  **例外は 2 つだけ**: zip の展開 (`/usr/bin/ditto`) と再起動 (`/usr/bin/open`)。
+  展開は署名済みバンドルの拡張属性と symlink を壊さない公開 API が無く、`ditto` が
+  標準的な手段であるため。いずれも引数配列で渡し、シェル経由の文字列展開はしない
 
 ### 異なる扱いをする箇所と理由
 
