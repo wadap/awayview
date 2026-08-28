@@ -102,12 +102,9 @@ final class AppVersionTests: XCTestCase {
         XCTAssertEqual(AppVersion("v1.0.2")!.description, "1.0.2")
     }
 
-    // Info.plist を持つ bundle から読めること (テストでは自前の辞書で代用できないので
-    // 読めない場合に nil を返すことだけ確認する)
-    func testCurrentReturnsNilWithoutInfoPlist() {
-        let empty = Bundle(for: AppVersionTests.self)
-        _ = AppVersion.current(bundle: empty)   // クラッシュしないこと
-    }
+    // `AppVersion.current(bundle:)` は Info.plist の 1 キーを読むだけで、
+    // 文字列のパースは上のテストが押さえている。テスト用 bundle の Info.plist の
+    // 中身は環境依存なので、ここでは検証しない (Task 5 の --check-update で実機確認する)
 }
 ```
 
@@ -789,6 +786,12 @@ if args.contains("--check-update") {
 }
 
 if args.contains("--install-update") {
+    // .build/release/AwayView のような素の実行ファイルでは bundleURL が
+    // 親ディレクトリを指す。そのまま置換すると無関係なディレクトリを壊すので拒否する
+    guard Bundle.main.bundleURL.pathExtension == "app" else {
+        print("refusing: --install-update only works from inside AwayView.app")
+        exit(1)
+    }
     let current = AppVersion.current() ?? AppVersion(major: 0, minor: 0, patch: 0)
     let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: current)
     UpdateInstaller.log = { print($0) }
