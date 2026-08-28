@@ -42,6 +42,7 @@
 "update.failed" = "更新を確認できませんでした: %@";
 "update.copied" = "コピーしました: %@\nターミナルで実行すると更新できます。";
 "update.blocked_low" = "いま低解像度で動作中です。ホーム解像度に戻してから更新してください。低解像度のまま再起動すると、その解像度をホームとして誤って学習することがあります。";
+"update.installed_no_restart" = "更新を適用しました。低解像度で動作中のため再起動していません。次回起動時から新しい版になります。";
 "update.install_failed" = "更新に失敗しました: %@\nReleases ページから手動で更新してください。";
 "update.open_releases" = "Releases を開く";
 "update.ok" = "OK";

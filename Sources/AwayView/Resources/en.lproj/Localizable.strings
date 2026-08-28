@@ -42,6 +42,7 @@
 "update.failed" = "Could not check for updates: %@";
 "update.copied" = "Copied: %@\nRun it in Terminal to update.";
 "update.blocked_low" = "AwayView is at the low resolution right now. Switch back to the home resolution first, then update — restarting while lowered can make the app mis-learn your home resolution.";
+"update.installed_no_restart" = "Update installed. AwayView is at the low resolution right now, so it was not restarted — the new version will start the next time you launch it.";
 "update.install_failed" = "Update failed: %@\nOpen the Releases page to update manually.";
 "update.open_releases" = "Open Releases Page";
 "update.ok" = "OK";

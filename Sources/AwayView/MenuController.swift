@@ -69,7 +69,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         u.resume()
         updateTimer = u
 
-        UpdateInstaller.log = { [writer] message in writer.log(message) }
+        // install() は背景キューから呼ぶので、writer への書き込みも main に寄せて
+        // tick 側のログと競合 (同じオフセットへの書き込み) しないようにする
+        UpdateInstaller.log = { [writer] message in
+            DispatchQueue.main.async { writer.log(message) }
+        }
     }
 
     private func tick() {
@@ -190,8 +194,16 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         isInstalling = false
         switch outcome {
         case .ok:
-            UpdateInstaller.relaunch()
-            NSApp.terminate(nil)
+            // ダウンロード中に接続が来て解像度が下がっている可能性がある。
+            // クリック時点のガードだけでは足りないので、再起動の直前にもう一度見る
+            switch currentState {
+            case .home, .override:
+                UpdateInstaller.relaunch()
+                NSApp.terminate(nil)
+            case .low, .lowManual:
+                writer.log("update: installed but not restarted (display lowered)")
+                alert(L("update.installed_no_restart"))
+            }
         case .failed(let reason):
             writer.log("!! update failed: \(reason)")
             alertWithReleasesLink(L("update.install_failed", reason), url: release.htmlURL)
