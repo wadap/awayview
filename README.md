@@ -27,6 +27,7 @@ bigger, then switches back when you leave.
 
 ### Homebrew
     brew tap wadap/tap
+    brew trust --tap wadap/tap    # Homebrew 6+ requires this for third-party taps
     brew install --cask awayview
 
 Or download the notarized app from
@@ -40,6 +41,14 @@ Or download the notarized app from
 🏠 home / 💻 low / 📌 pinned high / ⚠️ no target display.
 Modes: Automatic / High resolution (home) / Low resolution (away).
 Resolution pickers for both high and low sides.
+
+The menu also shows the running version and checks GitHub for newer releases
+(daily, and on demand). If AwayView was installed with Homebrew it hands you
+the `brew upgrade` command rather than replacing itself; installed any other
+way, it downloads the notarized build, verifies its signature, and restarts.
+AwayView will not restart itself while the display is lowered: switch back to
+the home resolution first, or the update will simply take effect the next time
+you launch it. Automatic checking can be turned off in Settings.
 
 ## Settings
 Menu → Settings…: watched port, remote CIDR ranges (one per line; empty list

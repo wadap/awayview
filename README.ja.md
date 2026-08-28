@@ -26,6 +26,7 @@ AwayView は Mac 側の解像度を下げて文字を大きくし、離れたら
 
 ### Homebrew
     brew tap wadap/tap
+    brew trust --tap wadap/tap    # Homebrew 6 以降、サードパーティ tap に必要
     brew install --cask awayview
 
 または [Releases](https://github.com/wadap/awayview/releases) から
@@ -39,6 +40,12 @@ notarize 済みアプリをダウンロード。
 🏠 ホーム / 💻 低解像度 / 📌 高解像度に固定中 / ⚠️ 対象ディスプレイなし。
 モード: 自動判定 / 高解像度（ホーム）/ 低解像度（外出）。
 高解像度・低解像度それぞれに解像度選択メニューあり。
+
+メニューには動作中の版も出る。GitHub の Releases を 1 日 1 回と手動で確認し、
+Homebrew で入れている場合は `brew upgrade` のコマンドを渡すだけ、それ以外の
+経路で入れている場合は notarize 済みビルドを取得して署名を検証し、置き換えて
+再起動する。低解像度で動作中は自分を再起動しない。先にホーム解像度へ戻すか、
+次回起動時から新しい版になる。自動確認は設定でオフにできる。
 
 ## 設定
 メニュー → 設定…: 監視ポート、リモート CIDR 範囲（1 行 1 件。空リストで自動切替
