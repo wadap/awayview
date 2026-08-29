@@ -39,6 +39,7 @@
 /* updates */
 "settings.auto_check" = "自動で更新を確認する";
 "update.up_to_date" = "AwayView %@ は最新版です。";
+"update.available" = "AwayView %@ が利用できます。\nメニューをもう一度開くと更新できます。";
 "update.failed" = "更新を確認できませんでした: %@";
 "update.copied" = "コピーしました: %@\nターミナルで実行すると更新できます。";
 "update.blocked_low" = "いま低解像度で動作中です。ホーム解像度に戻してから更新してください。低解像度のまま再起動すると、その解像度をホームとして誤って学習することがあります。";

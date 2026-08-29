@@ -39,6 +39,7 @@
 /* updates */
 "settings.auto_check" = "Check for updates automatically";
 "update.up_to_date" = "AwayView %@ is the latest version.";
+"update.available" = "AwayView %@ is available.\nOpen the menu again to update.";
 "update.failed" = "Could not check for updates: %@";
 "update.copied" = "Copied: %@\nRun it in Terminal to update.";
 "update.blocked_low" = "AwayView is at the low resolution right now. Switch back to the home resolution first, then update — restarting while lowered can make the app mis-learn your home resolution.";

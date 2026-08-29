@@ -147,6 +147,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             settings.lastCheckedAt = Date()
             pendingRelease = release
             writer.log("update check: \(release.version) available")
+            // 手動確認で「見つかった」だけ無反応だと、ユーザーが唯一知りたい
+            // 結果が黙ることになる。メニュー項目の変化は開き直さないと見えない
+            if manual { alert(L("update.available", release.version.description)) }
         case .failed(let reason):
             // 確認できなかっただけ。watcher は止めない (hooks の失敗と同じ規律)。
             // lastCheckedAt は進めない — 次の 1 時間 tick でまた試す
@@ -210,22 +213,35 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    // runModal は nested run loop を回す。これを DispatchQueue.main.async の
+    // ブロックの中から入ると main キューが drain されず、同じキューに載っている
+    // 3 秒 tick が止まる (実測: 1 秒のモーダル表示中に 0 tick)。update.installed_no_restart
+    // は「DL 中に低解像度へ落ちた」ことが表示理由なので、そこで watcher が凍ると
+    // 切断しても解像度が戻らない。run loop 自身から入り直せば背後で tick が回り続ける
+    private func runModalOffMainQueueBlock(_ body: @escaping () -> Void) {
+        RunLoop.main.perform(inModes: [.common], block: body)
+    }
+
     private func alert(_ message: String) {
-        NSApp.activate(ignoringOtherApps: true)   // accessory アプリなので明示活性化
-        let a = NSAlert()
-        a.messageText = message
-        a.addButton(withTitle: L("update.ok"))
-        a.runModal()
+        runModalOffMainQueueBlock {
+            NSApp.activate(ignoringOtherApps: true)   // accessory アプリなので明示活性化
+            let a = NSAlert()
+            a.messageText = message
+            a.addButton(withTitle: L("update.ok"))
+            a.runModal()
+        }
     }
 
     private func alertWithReleasesLink(_ message: String, url: URL) {
-        NSApp.activate(ignoringOtherApps: true)
-        let a = NSAlert()
-        a.messageText = message
-        a.addButton(withTitle: L("update.open_releases"))
-        a.addButton(withTitle: L("update.ok"))
-        if a.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(url)
+        runModalOffMainQueueBlock {
+            NSApp.activate(ignoringOtherApps: true)
+            let a = NSAlert()
+            a.messageText = message
+            a.addButton(withTitle: L("update.open_releases"))
+            a.addButton(withTitle: L("update.ok"))
+            if a.runModal() == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 

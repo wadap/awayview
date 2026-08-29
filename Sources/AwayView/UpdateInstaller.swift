@@ -14,6 +14,9 @@ enum UpdateInstaller {
     /// Developer ID の Team ID。これ以外が署名したバンドルは受け付けない
     static let teamID = "45F858C28S"
 
+    /// 置き換え先として認める bundle identifier。同じ team の別アプリを弾く
+    static let bundleIdentifier = "com.wadap.AwayView"
+
     static var log: (String) -> Void = { _ in }
 
     static func install(_ release: Release,
@@ -79,15 +82,28 @@ enum UpdateInstaller {
         try? run("/usr/bin/open", ["-n", bundleURL.path])
     }
 
-    // Developer ID 署名が有効で、leaf 証明書の OU が自分の Team ID であることだけを
-    // 見る。notarization チケットの有無や証明書失効は見ていない (別チェック) ので、
-    // ここを通っても「notarize 済み」の証明にはならない
+    // Developer ID Application 証明書で署名され、Team ID と bundle identifier が
+    // 自分のものであることを見る。notarization チケットの有無や証明書失効は見て
+    // いない (別チェック) ので、ここを通っても「notarize 済み」の証明にはならない
     private static func verifySignature(at url: URL) -> Bool {
         var staticCode: SecStaticCode?
         guard SecStaticCodeCreateWithPath(url as CFURL, [], &staticCode) == errSecSuccess,
               let code = staticCode else { return false }
 
-        let text = "anchor apple generic and certificate leaf[subject.OU] = \"\(teamID)\""
+        // OU だけでは足りない。Apple Development 証明書の OU も同じ Team ID なので
+        // (このマシンの keychain のもので実測)、開発機の鍵で署名したバンドルが
+        // 通ってしまう。Developer ID の marker OID で証明書の種類まで縛る
+        //   1.2.840.113635.100.6.2.6  = Developer ID Certification Authority
+        //   1.2.840.113635.100.6.1.13 = Developer ID Application (leaf)
+        // zip は URLSession で取って ditto で展開するため quarantine 属性が付かず、
+        // Gatekeeper が独立に評価する機会は無い。この要件が唯一の防壁になる
+        let text = """
+        anchor apple generic \
+        and certificate 1[field.1.2.840.113635.100.6.2.6] exists \
+        and certificate leaf[field.1.2.840.113635.100.6.1.13] exists \
+        and certificate leaf[subject.OU] = "\(teamID)" \
+        and identifier "\(bundleIdentifier)"
+        """
         var requirement: SecRequirement?
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let req = requirement else { return false }
