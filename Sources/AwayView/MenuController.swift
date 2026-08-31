@@ -14,6 +14,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var currentState: WatchState = .home
     private var currentIP: String?
     private var lastLogged: WatchState?
+    private let origin = InstallOrigin.detect()
+    private let version = AppVersion.current()
+    private var pendingRelease: Release?
+    private var isChecking = false
+    private var isInstalling = false
+    private var updateTimer: DispatchSourceTimer?
 
     init(stateDirectory: URL? = nil) {
         self.writer = stateDirectory.map { ObservationWriter(directory: $0) } ?? ObservationWriter()
@@ -54,6 +60,20 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         t.setEventHandler { [weak self] in self?.tick() }
         t.resume()
         timer = t
+
+        // 更新チェック: 起動 5 分後から 1 時間ごとに「24 時間経ったか」を見る。
+        // 判定を時刻ベースにしているのは、再起動を繰り返しても過剰に叩かないため
+        let u = DispatchSource.makeTimerSource(queue: .main)
+        u.schedule(deadline: .now() + 300, repeating: 3600)
+        u.setEventHandler { [weak self] in self?.autoCheckIfDue() }
+        u.resume()
+        updateTimer = u
+
+        // install() は背景キューから呼ぶので、writer への書き込みも main に寄せて
+        // tick 側のログと競合 (同じオフセットへの書き込み) しないようにする
+        UpdateInstaller.log = { [writer] message in
+            DispatchQueue.main.async { writer.log(message) }
+        }
     }
 
     private func tick() {
@@ -90,6 +110,173 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.title = icon
     }
 
+    // --- 更新 ------------------------------------------------------------
+
+    private func autoCheckIfDue() {
+        guard settings.autoCheckEnabled else { return }
+        if let last = settings.lastCheckedAt, Date().timeIntervalSince(last) < 24 * 3600 {
+            return
+        }
+        checkForUpdates(manual: false)
+    }
+
+    private func checkForUpdates(manual: Bool) {
+        guard !isChecking, let version else { return }
+        isChecking = true
+        let checker = UpdateChecker(fetcher: GitHubReleaseFetcher(), currentVersion: version)
+        // ネットワーク I/O は同期なので背景キューで回す
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let result = checker.check()
+            DispatchQueue.main.async { self?.checkFinished(result, manual: manual) }
+        }
+    }
+
+    private func checkFinished(_ result: UpdateCheckResult, manual: Bool) {
+        isChecking = false
+        switch result {
+        case .upToDate:
+            // 確認が成立したときだけ次回起点を進める。失敗を「確認済み」と
+            // 混同すると v1.0.0 の sysctl 誤判定と同じ形の穴になる
+            settings.lastCheckedAt = Date()
+            pendingRelease = nil
+            writer.log("update check: up to date")
+            if manual, let version {
+                alert(L("update.up_to_date", version.description))
+            }
+        case .available(let release):
+            settings.lastCheckedAt = Date()
+            pendingRelease = release
+            writer.log("update check: \(release.version) available")
+            // 手動確認で「見つかった」だけ無反応だと、ユーザーが唯一知りたい
+            // 結果が黙ることになる。メニュー項目の変化は開き直さないと見えない
+            if manual { alert(L("update.available", release.version.description)) }
+        case .failed(let reason):
+            // 確認できなかっただけ。watcher は止めない (hooks の失敗と同じ規律)。
+            // lastCheckedAt は進めない — 次の 1 時間 tick でまた試す
+            writer.log("!! update check failed: \(reason)")
+            if manual { alert(L("update.failed", reason)) }
+        }
+    }
+
+    @objc private func checkForUpdatesManually() {
+        checkForUpdates(manual: true)
+    }
+
+    @objc private func copyBrewCommand() {
+        let command = "brew upgrade --cask awayview"
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(command, forType: .string)
+        alert(L("update.copied", command))
+    }
+
+    @objc private func installUpdate() {
+        guard let release = pendingRelease else { return }
+        // 低解像度のまま再起動すると、その解像度をホームとして誤学習しうる。
+        // .override はホーム解像度を維持したまま毎 tick 追従する状態なので許可し、
+        // 実際に下がっている .low / .lowManual だけを塞ぐ (将来状態が増えたときに
+        // 見落とさないよう「許可する側」ではなく「塞ぐ側」を明示する)
+        switch currentState {
+        case .low, .lowManual:
+            alert(L("update.blocked_low"))
+            return
+        case .home, .override:
+            break
+        }
+        guard !isInstalling else { return }
+        isInstalling = true
+        writer.log("update: installing \(release.version)")
+        // install はネットワーク取得 + ditto + 署名検証を含み同期でブロックする。
+        // main で回すと 3 秒 tick の watcher も一緒に止まってしまうので背景キューへ
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let outcome = UpdateInstaller.install(release)
+            DispatchQueue.main.async { self?.installFinished(outcome, release: release) }
+        }
+    }
+
+    private func installFinished(_ outcome: InstallOutcome, release: Release) {
+        isInstalling = false
+        switch outcome {
+        case .ok:
+            // ダウンロード中に接続が来て解像度が下がっている可能性がある。
+            // クリック時点のガードだけでは足りないので、再起動の直前にもう一度見る
+            switch currentState {
+            case .home, .override:
+                UpdateInstaller.relaunch()
+                NSApp.terminate(nil)
+            case .low, .lowManual:
+                writer.log("update: installed but not restarted (display lowered)")
+                alert(L("update.installed_no_restart"))
+            }
+        case .failed(let reason):
+            writer.log("!! update failed: \(reason)")
+            alertWithReleasesLink(L("update.install_failed", reason), url: release.htmlURL)
+        }
+    }
+
+    // runModal は nested run loop を回す。これを DispatchQueue.main.async の
+    // ブロックの中から入ると main キューが drain されず、同じキューに載っている
+    // 3 秒 tick が止まる (実測: 1 秒のモーダル表示中に 0 tick)。update.installed_no_restart
+    // は「DL 中に低解像度へ落ちた」ことが表示理由なので、そこで watcher が凍ると
+    // 切断しても解像度が戻らない。run loop 自身から入り直せば背後で tick が回り続ける
+    private func runModalOffMainQueueBlock(_ body: @escaping () -> Void) {
+        RunLoop.main.perform(inModes: [.common], block: body)
+    }
+
+    private func alert(_ message: String) {
+        runModalOffMainQueueBlock {
+            NSApp.activate(ignoringOtherApps: true)   // accessory アプリなので明示活性化
+            let a = NSAlert()
+            a.messageText = message
+            a.addButton(withTitle: L("update.ok"))
+            a.runModal()
+        }
+    }
+
+    private func alertWithReleasesLink(_ message: String, url: URL) {
+        runModalOffMainQueueBlock {
+            NSApp.activate(ignoringOtherApps: true)
+            let a = NSAlert()
+            a.messageText = message
+            a.addButton(withTitle: L("update.open_releases"))
+            a.addButton(withTitle: L("update.ok"))
+            if a.runModal() == .alertFirstButtonReturn {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+
+    private func updateMenuItem() -> NSMenuItem {
+        if isInstalling {
+            return disabled(L("menu.installing"))
+        }
+        if isChecking {
+            return disabled(L("menu.checking"))
+        }
+        guard let release = pendingRelease else {
+            let item = NSMenuItem(title: L("menu.check_updates"),
+                                  action: #selector(checkForUpdatesManually),
+                                  keyEquivalent: "")
+            item.target = self
+            return item
+        }
+        switch origin {
+        case .homebrew:
+            // brew 管理下でアプリが自分を置き換えると brew 側の版情報がずれる。
+            // ここではコマンドを渡すだけにする
+            let item = NSMenuItem(title: L("menu.update_available_brew", release.version.description),
+                                  action: #selector(copyBrewCommand),
+                                  keyEquivalent: "")
+            item.target = self
+            return item
+        case .direct:
+            let item = NSMenuItem(title: L("menu.update_available", release.version.description),
+                                  action: #selector(installUpdate),
+                                  keyEquivalent: "")
+            item.target = self
+            return item
+        }
+    }
+
     // --- メニュー構築 (開くたびに再構築) ----------------------------------
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -123,6 +310,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
 
+        menu.addItem(.separator())
+        menu.addItem(disabled(L("menu.version", version?.description ?? "dev")))
+        menu.addItem(updateMenuItem())
         menu.addItem(.separator())
         let quit = NSMenuItem(title: L("menu.quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)

@@ -17,6 +17,12 @@
 "res.low.default" = "既定（ホームの半分）";
 "menu.open_log" = "ログを開く";
 "menu.settings" = "設定…";
+"menu.version" = "AwayView %@";
+"menu.check_updates" = "更新を確認…";
+"menu.checking" = "更新を確認中…";
+"menu.installing" = "更新中…";
+"menu.update_available" = "v%@ に更新";
+"menu.update_available_brew" = "v%@ が利用可能 — brew のコマンドをコピー";
 "menu.quit" = "終了";
 
 /* settings */
@@ -29,3 +35,15 @@
 "settings.saved" = "保存しました。数秒以内に反映されます。";
 "settings.error.port" = "ポートは 1〜65535 の整数で入力してください。";
 "settings.error.cidr" = "不正な CIDR: %@";
+
+/* updates */
+"settings.auto_check" = "自動で更新を確認する";
+"update.up_to_date" = "AwayView %@ は最新版です。";
+"update.available" = "AwayView %@ が利用できます。\nメニューをもう一度開くと更新できます。";
+"update.failed" = "更新を確認できませんでした: %@";
+"update.copied" = "コピーしました: %@\nターミナルで実行すると更新できます。";
+"update.blocked_low" = "いま低解像度で動作中です。ホーム解像度に戻してから更新してください。低解像度のまま再起動すると、その解像度をホームとして誤って学習することがあります。";
+"update.installed_no_restart" = "更新を適用しました。低解像度で動作中のため再起動していません。次回起動時から新しい版になります。";
+"update.install_failed" = "更新に失敗しました: %@\nReleases ページから手動で更新してください。";
+"update.open_releases" = "Releases を開く";
+"update.ok" = "OK";
