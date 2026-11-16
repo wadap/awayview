@@ -72,6 +72,28 @@ enum DisplayController {
 }
 
 // ---------------------------------------------------------------------------
+// ディスプレイの列挙と状態問い合わせ。RealDisplayController に注入することで、
+// 「保存済みディスプレイが一瞬消える」「スリープ中」をテストで再現できる。
+// ---------------------------------------------------------------------------
+
+protocol DisplayEnvironment {
+    func onlineDisplays() -> [CGDirectDisplayID]
+    func uuidString(for id: CGDirectDisplayID) -> String?
+    func isBuiltin(_ id: CGDirectDisplayID) -> Bool
+    /// 構成変更を受け付けられる状態か (アクティブ・オンライン・スリープしていない)
+    func isReady(_ id: CGDirectDisplayID) -> Bool
+}
+
+struct SystemDisplayEnvironment: DisplayEnvironment {
+    func onlineDisplays() -> [CGDirectDisplayID] { DisplayController.onlineDisplays() }
+    func uuidString(for id: CGDirectDisplayID) -> String? { DisplayController.uuidString(for: id) }
+    func isBuiltin(_ id: CGDirectDisplayID) -> Bool { CGDisplayIsBuiltin(id) != 0 }
+    func isReady(_ id: CGDirectDisplayID) -> Bool {
+        CGDisplayIsActive(id) != 0 && CGDisplayIsOnline(id) != 0 && CGDisplayIsAsleep(id) == 0
+    }
+}
+
+// ---------------------------------------------------------------------------
 // DisplayControlling の実装 (CG 直叩き)。ホーム自動学習は UserDefaults に永続化
 // (UUID/WxH/isHiDPI)。home.cmd は legacy 専用なので触らない。
 // ---------------------------------------------------------------------------
@@ -80,27 +102,34 @@ final class RealDisplayController: DisplayControlling {
     static let suiteName = "com.wadap.AwayView"
 
     private let defaults: UserDefaults
+    private let environment: DisplayEnvironment
     var log: (String) -> Void = { _ in }
+    private var deferring = false   // 保留中か (出入りのログを 1 回ずつにするため)
 
     // suiteName が自 bundle id と同一のとき UserDefaults(suiteName:) は nil を
     // 返す (.app 実行時)。その場合 .standard が同じドメインを指すのでフォールバック
-    init(defaults: UserDefaults = UserDefaults(suiteName: RealDisplayController.suiteName) ?? .standard) {
+    init(defaults: UserDefaults = UserDefaults(suiteName: RealDisplayController.suiteName) ?? .standard,
+         environment: DisplayEnvironment = SystemDisplayEnvironment()) {
         self.defaults = defaults
+        self.environment = environment
     }
 
     // --- 対象ディスプレイ (外部優先で選出し UUID を記憶) -------------------
 
+    /// 自動選出するのは初回 (UUID 未保存) だけ。保存済みのディスプレイが一覧に
+    /// 無いときは nil を返し、別のディスプレイへ切り替えない。クラムシェル復帰中は
+    /// 外部ディスプレイが一瞬消えるので、そこで切り替えて UUID を上書きすると
+    /// 別のディスプレイにホーム解像度を当てに行ってしまう (実機で発生済み)
     func resolveTarget() -> CGDirectDisplayID? {
-        let displays = DisplayController.onlineDisplays()
+        let displays = environment.onlineDisplays()
         guard !displays.isEmpty else { return nil }
-        if let saved = defaults.string(forKey: "TargetDisplayUUID"),
-           let id = displays.first(where: { DisplayController.uuidString(for: $0) == saved }) {
-            return id
+        if let saved = defaults.string(forKey: "TargetDisplayUUID") {
+            return displays.first { environment.uuidString(for: $0) == saved }
         }
         // 型注釈は必須: 省くと Swift 6.1 が ?? を Optional 側のオーバーロードに
         // 解決してしまう (6.3 では非 Optional に倒れるのでローカルでは気づけない)
-        let target: CGDirectDisplayID = displays.first { CGDisplayIsBuiltin($0) == 0 } ?? displays[0]
-        if let uuid = DisplayController.uuidString(for: target) {
+        let target: CGDirectDisplayID = displays.first { !environment.isBuiltin($0) } ?? displays[0]
+        if let uuid = environment.uuidString(for: target) {
             defaults.set(uuid, forKey: "TargetDisplayUUID")
         }
         return target
@@ -130,7 +159,7 @@ final class RealDisplayController: DisplayControlling {
     // --- DisplayControlling -----------------------------------------------
 
     func applyLow(_ resolution: String?) -> ApplyResult {
-        guard let id = resolveTarget() else { return .failed }
+        guard let id = readyTarget() else { return .deferred }
         let modes = DisplayController.allModes(for: id)
         let target: DisplayModeInfo?
         if let resolution {
@@ -150,7 +179,7 @@ final class RealDisplayController: DisplayControlling {
     }
 
     func restoreHome(explicit resolution: String?) -> RestoreResult {
-        guard let id = resolveTarget() else { return .failed }
+        guard let id = readyTarget() else { return .deferred }
         let modes = DisplayController.allModes(for: id)
         if let resolution {
             guard let m = DisplayController.findMode(resolution, in: modes) else {
@@ -174,11 +203,32 @@ final class RealDisplayController: DisplayControlling {
         guard let id = resolveTarget() else { return }
         if onlyIfMissing, storedHome() != nil { return }
         // 誤学習ガード: スリープ/非アクティブの瞬間の配置をホームとして学習しない
-        guard CGDisplayIsActive(id) != 0, CGDisplayIsOnline(id) != 0, CGDisplayIsAsleep(id) == 0 else { return }
+        guard environment.isReady(id) else { return }
         guard let cur = CGDisplayCopyDisplayMode(id) else { return }
         defaults.set(cur.width, forKey: "HomeWidth")
         defaults.set(cur.height, forKey: "HomeHeight")
         defaults.set(cur.pixelWidth > cur.width, forKey: "HomeIsHiDPI")
+    }
+
+    // --- 適用直前のガード ---------------------------------------------------
+
+    /// 構成変更を受け付けられるターゲット。不在・非アクティブ・スリープ中は nil。
+    /// この状態で CGCompleteDisplayConfiguration を呼ぶと約 10 秒ブロックして
+    /// 失敗する (実機で発生済み) ので、呼ばずに「保留」として返すための入口。
+    /// ログは保留に入ったとき・抜けたときの 1 回ずつだけ
+    private func readyTarget() -> CGDirectDisplayID? {
+        guard let id = resolveTarget(), environment.isReady(id) else {
+            if !deferring {
+                deferring = true
+                log("-- display not ready; deferring display changes")
+            }
+            return nil
+        }
+        if deferring {
+            deferring = false
+            log("-- display ready")
+        }
+        return id
     }
 
     // --- 適用 -------------------------------------------------------------
