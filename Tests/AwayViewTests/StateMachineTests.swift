@@ -62,6 +62,9 @@ final class StateMachineTests: XCTestCase {
     var highHooks = 0
     var unavailableCount = 0
     var sm: StateMachine!
+    /// テスト用の時計。tick() が 1 回読むたびに step 秒進む (= 3 秒 tick の再現)
+    var time: TimeInterval = 0
+    var step: TimeInterval = 3
 
     override func setUp() {
         super.setUp()
@@ -72,7 +75,13 @@ final class StateMachineTests: XCTestCase {
         lowHooks = 0
         highHooks = 0
         unavailableCount = 0
-        sm = StateMachine(connection: conn, display: display, flags: flags) { [weak self] state, ip in
+        time = 1000
+        step = 3
+        sm = StateMachine(connection: conn, display: display, flags: flags,
+                          clock: { [unowned self] in
+                              self.time += self.step
+                              return self.time
+                          }) { [weak self] state, ip in
             self?.states.append((state, ip))
         }
         sm.onLowApplied = { [weak self] in self?.lowHooks += 1 }
@@ -167,6 +176,7 @@ final class StateMachineTests: XCTestCase {
         XCTAssertEqual(lastState, .low, "復帰失敗中は state を進めない")
         XCTAssertEqual(display.count("capture"), capturesBefore, "失敗中は capture しない (誤学習ガード)")
         display.restoreResult = .ok
+        time += 60                      // バックオフ明け
         sm.tick()
         XCTAssertEqual(lastState, .override)
     }
@@ -326,6 +336,104 @@ final class StateMachineTests: XCTestCase {
         sm.tick()
         XCTAssertEqual(lastState, .low)
         XCTAssertEqual(lowHooks, 1)
+    }
+
+    // 20) 復帰の連続失敗はバックオフで間引かれる (3s → 10s → 30s → 60s)。
+    //     3 秒 tick を 40 回 (約 2 分) 回しても試行は 0/3/15/45/105 秒の 5 回だけ
+    func testRepeatedRestoreFailuresBackOff() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<40 { sm.tick() }
+        XCTAssertEqual(display.count("restore:FAILED"), 5)
+        XCTAssertEqual(lastState, .low, "失敗中は state を進めない")
+    }
+
+    // 21) 低解像度の適用失敗も同じバックオフに乗る
+    func testRepeatedApplyLowFailuresBackOff() {
+        sm.tick()
+        flags.forceLow = true
+        display.applyLowResult = .failed
+        for _ in 0..<40 { sm.tick() }
+        XCTAssertEqual(display.count("applyLow:FAILED"), 5)
+    }
+
+    // 22) バックオフは上限 60 秒で頭打ちになり、それ以上は伸びない
+    func testBackoffIsCappedAtSixtySeconds() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<40 { sm.tick() }            // 0/3/15/45/105 秒
+        let before = display.count("restore:FAILED")
+        for _ in 0..<100 { sm.tick() }           // さらに 300 秒 → 60 秒ごとに 5 回
+        XCTAssertEqual(display.count("restore:FAILED"), before + 5)
+    }
+
+    // 23) 接続状態が変わったらバックオフをリセットし、次の機会にすぐ試す
+    func testConnectionChangeResetsBackoff() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<10 { sm.tick() }            // 0/3/15 秒で 3 回。次は 45 秒
+        XCTAssertEqual(display.count("restore:FAILED"), 3)
+        conn.ip = "100.99.1.2"
+        sm.tick()                                // 再接続: low のまま (表示操作なし)
+        conn.ip = nil
+        sm.tick()                                // 切断: 6 秒しか経っていないが即試行
+        XCTAssertEqual(display.count("restore:FAILED"), 4)
+    }
+
+    // 24) モードや解像度の選び直しでもリセットする (メニュー操作を待たせない)
+    func testFlagChangeResetsBackoff() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<10 { sm.tick() }
+        XCTAssertEqual(display.count("restore:FAILED"), 3)
+        flags.resHigh = "3200x1350"
+        sm.tick()
+        XCTAssertEqual(display.count("restore:FAILED"), 4)
+    }
+
+    // 25) 保留を挟んだら連続失敗を数え直す (ディスプレイの状態が変わった合図)
+    func testDeferredResetsBackoff() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        sm.tick()                                // 0 秒: 失敗
+        sm.tick()                                // 3 秒: 失敗 → 次は 13 秒以降
+        display.restoreResult = .deferred
+        for _ in 0..<4 { sm.tick() }             // 15 秒で保留を観測 → リセット
+        display.restoreResult = .failed
+        sm.tick()                                // 直後の tick で試行される
+        XCTAssertEqual(display.count("restore:FAILED"), 3)
+    }
+
+    // 26) 不明 (列挙失敗) は接続状態の変化として数えない
+    func testUnavailableProbeDoesNotResetBackoff() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<10 { sm.tick() }
+        XCTAssertEqual(display.count("restore:FAILED"), 3)
+        conn.forced = .unavailable
+        sm.tick()
+        conn.forced = nil
+        sm.tick()
+        XCTAssertEqual(display.count("restore:FAILED"), 3, "不明を挟んでもバックオフは続く")
+    }
+
+    // 27) resetBackoff() (スリープ復帰時に呼ぶ) で次の tick からすぐ試す
+    func testResetBackoffAllowsImmediateRetry() {
+        goLow()
+        conn.ip = nil
+        display.restoreResult = .failed
+        for _ in 0..<10 { sm.tick() }
+        XCTAssertEqual(display.count("restore:FAILED"), 3)
+        sm.resetBackoff()
+        display.restoreResult = .ok
+        sm.tick()
+        XCTAssertEqual(lastState, .home)
     }
 
     private func goLow() {
