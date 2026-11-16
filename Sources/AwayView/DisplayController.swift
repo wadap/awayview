@@ -104,14 +104,18 @@ final class RealDisplayController: DisplayControlling {
     private let defaults: UserDefaults
     private let environment: DisplayEnvironment
     var log: (String) -> Void = { _ in }
+    private let clock: () -> TimeInterval
     private var deferring = false   // 保留中か (出入りのログを 1 回ずつにするため)
+    private var failureLog = LogThrottle()
 
     // suiteName が自 bundle id と同一のとき UserDefaults(suiteName:) は nil を
     // 返す (.app 実行時)。その場合 .standard が同じドメインを指すのでフォールバック
     init(defaults: UserDefaults = UserDefaults(suiteName: RealDisplayController.suiteName) ?? .standard,
-         environment: DisplayEnvironment = SystemDisplayEnvironment()) {
+         environment: DisplayEnvironment = SystemDisplayEnvironment(),
+         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
         self.defaults = defaults
         self.environment = environment
+        self.clock = clock
     }
 
     // --- 対象ディスプレイ (外部優先で選出し UUID を記憶) -------------------
@@ -172,7 +176,7 @@ final class RealDisplayController: DisplayControlling {
             target = nil
         }
         guard let target else {
-            log("!! no low mode candidate")
+            logFailure("!! no low mode candidate")
             return .failed
         }
         return apply(target, on: id) ? .ok : .failed
@@ -183,7 +187,7 @@ final class RealDisplayController: DisplayControlling {
         let modes = DisplayController.allModes(for: id)
         if let resolution {
             guard let m = DisplayController.findMode(resolution, in: modes) else {
-                log("!! res_high mode not found: \(resolution)")
+                logFailure("!! res_high mode not found: \(resolution)")
                 return .failed
             }
             return apply(m, on: id) ? .ok : .failed
@@ -193,7 +197,7 @@ final class RealDisplayController: DisplayControlling {
             $0.width == home.width && $0.height == home.height && $0.isHiDPI == home.isHiDPI
         }
         guard let m = candidates.max(by: { $0.refreshRate < $1.refreshRate }) else {
-            log("!! home mode not found: \(home.width)x\(home.height)")
+            logFailure("!! home mode not found: \(home.width)x\(home.height)")
             return .failed
         }
         return apply(m, on: id) ? .ok : .failed
@@ -220,6 +224,7 @@ final class RealDisplayController: DisplayControlling {
         guard let id = resolveTarget(), environment.isReady(id) else {
             if !deferring {
                 deferring = true
+                failureLog.reset()
                 log("-- display not ready; deferring display changes")
             }
             return nil
@@ -239,13 +244,21 @@ final class RealDisplayController: DisplayControlling {
         guard CGBeginDisplayConfiguration(&config) == .success, let config else { return false }
         guard CGConfigureDisplayWithDisplayMode(config, id, cgMode, nil) == .success else {
             CGCancelDisplayConfiguration(config)
-            log("!! configure failed: \(target.resString)")
+            logFailure("!! configure failed: \(target.resString)")
             return false
         }
         guard CGCompleteDisplayConfiguration(config, .permanently) == .success else {
-            log("!! complete configuration failed: \(target.resString)")
+            logFailure("!! complete configuration failed: \(target.resString)")
             return false
         }
+        failureLog.reset()
         return true
+    }
+
+    /// 失敗ログは間引いて出す (同じ文言の連続は 10 分に 1 行の要約にまとめる)
+    private func logFailure(_ message: String) {
+        if let line = failureLog.filter(message, now: clock()) {
+            log(line)
+        }
     }
 }

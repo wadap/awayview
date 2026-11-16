@@ -39,6 +39,7 @@ final class RealDisplayControllerTests: XCTestCase {
     var defaults: UserDefaults!
     var env: FakeDisplayEnvironment!
     var logs: [String] = []
+    var time: TimeInterval = 0
     var dc: RealDisplayController!
 
     override func setUp() {
@@ -47,7 +48,9 @@ final class RealDisplayControllerTests: XCTestCase {
         defaults.removePersistentDomain(forName: suite)
         env = FakeDisplayEnvironment()
         logs = []
-        dc = RealDisplayController(defaults: defaults, environment: env)
+        time = 0
+        dc = RealDisplayController(defaults: defaults, environment: env,
+                                   clock: { [unowned self] in self.time })
         dc.log = { [unowned self] in self.logs.append($0) }
     }
 
@@ -151,6 +154,20 @@ final class RealDisplayControllerTests: XCTestCase {
         XCTAssertEqual(dc.restoreHome(explicit: nil), .noCache)
         XCTAssertEqual(logs, ["-- display not ready; deferring display changes",
                               "-- display ready"])
+    }
+
+    // 同じ失敗の連打は間引かれる。ここでは「モードが見つからない」失敗で確認する
+    // (実在しない ID なのでモード一覧は空になり、CG の適用までは進まない)
+    func testRepeatedFailureLogIsThrottled() {
+        env.add(external, uuid: "EXTERNAL")
+        for i in 0..<10 {
+            time = TimeInterval(i * 60)
+            XCTAssertEqual(dc.restoreHome(explicit: "3840x1620"), .failed)
+        }
+        XCTAssertEqual(logs, ["!! res_high mode not found: 3840x1620"])
+        time = 600
+        _ = dc.restoreHome(explicit: "3840x1620")
+        XCTAssertEqual(logs.last, "!! res_high mode not found: 3840x1620 (11 consecutive failures)")
     }
 
     // ホーム学習の誤学習ガードは注入後も効く: 未準備なら capture しない
