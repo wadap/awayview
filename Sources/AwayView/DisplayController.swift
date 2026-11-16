@@ -69,6 +69,21 @@ enum DisplayController {
             }
             .max { ($0.width, $0.isHiDPI ? 1 : 0, $0.refreshRate) < ($1.width, $1.isHiDPI ? 1 : 0, $1.refreshRate) }
     }
+
+    /// 当て直しの迂回先。構成変更を 1 回完了させるたびに WindowServer は外部
+    /// ディスプレイの出力モードを設定し直す (実機で確認済み) ので、どこかへ行って
+    /// 戻れば映像リンクは張り直される。ウィンドウを動かさないよう、ポイント解像度が
+    /// 同じでスケールだけ違うモードを優先し、無ければリフレッシュレート違いを使う
+    static func relinkDetour(for current: DisplayModeInfo, in modes: [DisplayModeInfo]) -> DisplayModeInfo? {
+        let sameSize = modes.filter { $0.width == current.width && $0.height == current.height }
+        let otherScale = sameSize
+            .filter { $0.pixelWidth != current.pixelWidth || $0.pixelHeight != current.pixelHeight }
+            .max { $0.refreshRate < $1.refreshRate }
+        if let otherScale { return otherScale }
+        return sameSize
+            .filter { abs($0.refreshRate - current.refreshRate) >= 1 }
+            .max { $0.refreshRate < $1.refreshRate }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -212,6 +227,36 @@ final class RealDisplayController: DisplayControlling {
         defaults.set(cur.width, forKey: "HomeWidth")
         defaults.set(cur.height, forKey: "HomeHeight")
         defaults.set(cur.pixelWidth > cur.width, forKey: "HomeIsHiDPI")
+    }
+
+    // --- 当て直し -----------------------------------------------------------
+
+    /// 迂回モードを当ててから元へ戻すまでの待ち。リンクが立ち上がる前に戻すと
+    /// 張り直しにならない
+    static let relinkSettle: TimeInterval = 1
+
+    /// 映像リンクの張り直し。KVM を切り替えて戻った起床で、macOS は正しく設定した
+    /// つもりなのにパネルが黒いまま (カーソルだけ見える) になることがある。蓋の開閉で
+    /// 直るのは外部ディスプレイの出力モードが設定し直されるからなので、同じことを
+    /// 迂回モードとの往復で起こす。往復は同期で終えるので、あいだに tick が挟まって
+    /// 迂回中の状態をホームとして学習することは無い
+    func relink() -> ApplyResult {
+        guard let id = readyTarget() else { return .deferred }
+        guard let cur = CGDisplayCopyDisplayMode(id) else {
+            logFailure("!! relink: current mode unavailable")
+            return .failed
+        }
+        let current = DisplayModeInfo(width: cur.width, height: cur.height,
+                                      pixelWidth: cur.pixelWidth, pixelHeight: cur.pixelHeight,
+                                      refreshRate: cur.refreshRate, mode: cur)
+        guard let detour = DisplayController.relinkDetour(for: current,
+                                                          in: DisplayController.allModes(for: id)) else {
+            logFailure("!! relink: no detour mode for \(current.resString)")
+            return .failed
+        }
+        guard apply(detour, on: id) else { return .failed }
+        Thread.sleep(forTimeInterval: Self.relinkSettle)
+        return apply(current, on: id) ? .ok : .failed
     }
 
     // --- 適用直前のガード ---------------------------------------------------

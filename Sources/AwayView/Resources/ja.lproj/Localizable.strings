@@ -15,6 +15,7 @@
 "res.low.title" = "低解像度: %@";
 "res.high.default" = "自動学習%@";
 "res.low.default" = "既定（ホームの半分）";
+"menu.relink" = "ディスプレイを当て直す";
 "menu.open_log" = "ログを開く";
 "menu.settings" = "設定…";
 "menu.version" = "AwayView %@";
