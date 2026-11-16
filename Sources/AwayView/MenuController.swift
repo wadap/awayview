@@ -9,6 +9,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var machine: StateMachine!
     private var statusItem: NSStatusItem!
     private var timer: DispatchSourceTimer?
+    private var gate = SleepGate()
+    private var paused = false        // スリープ通知で止めている (ログを対にするため)
+    private var sleepObservers: [NSObjectProtocol] = []
     private var settingsWindow: SettingsWindowController?
 
     private var currentState: WatchState = .home
@@ -54,6 +57,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
 
         writer.log("watcher started (native)")
+        observeSleep()
 
         let t = DispatchSource.makeTimerSource(queue: .main)
         t.schedule(deadline: .now() + 1, repeating: 3)   // POLL_INTERVAL 相当
@@ -77,8 +81,50 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func tick() {
+        // スリープ中と復帰直後の猶予は何もしない (アイコン更新も CG を叩くので止める)。
+        // タイマーは回したままにする: suspend/resume は回数が釣り合わないと crash するが、
+        // スリープ通知は対で届く保証が無い
+        guard gate.isOpen(now: uptime()) else { return }
+        if paused {
+            paused = false
+            writer.log("-- resumed")
+            machine.resetBackoff()   // 復帰直後は通る見込みが高いので待たせない
+        }
         machine.tick()
         updateIcon()
+    }
+
+    // --- スリープ / 復帰 ---------------------------------------------------
+
+    private func uptime() -> TimeInterval { ProcessInfo.processInfo.systemUptime }
+
+    /// システムスリープとディスプレイスリープの両方を見る。クラムシェル運用では
+    /// システムは起きたままディスプレイだけ消えている時間が長く、その間の
+    /// 表示適用は約 10 秒ブロックして必ず失敗する (実機で発生済み)
+    private func observeSleep() {
+        let center = NSWorkspace.shared.notificationCenter
+        func observe(_ name: Notification.Name, _ handler: @escaping (AppController) -> Void) {
+            sleepObservers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                handler(self)
+            })
+        }
+        observe(NSWorkspace.willSleepNotification) {
+            $0.gate.systemWillSleep()
+            $0.notePaused("system sleep")
+        }
+        observe(NSWorkspace.screensDidSleepNotification) {
+            $0.gate.screensDidSleep()
+            $0.notePaused("display sleep")
+        }
+        observe(NSWorkspace.didWakeNotification) { $0.gate.systemDidWake(now: $0.uptime()) }
+        observe(NSWorkspace.screensDidWakeNotification) { $0.gate.screensDidWake(now: $0.uptime()) }
+    }
+
+    private func notePaused(_ reason: String) {
+        guard !paused else { return }
+        paused = true
+        writer.log("-- paused (\(reason))")
     }
 
     private func stateChanged(_ state: WatchState, _ ip: String?) {

@@ -45,9 +45,11 @@ if let i = args.firstIndex(of: "--apply"), i + 1 < args.count {
     // 検証専用: capture はしない (低解像度中に実行してもホームを誤学習しない)
     let dc = RealDisplayController()
     dc.log = { print($0) }
-    let ok = dc.applyLow(args[i + 1] == "default" ? nil : args[i + 1])
-    print(ok ? "applied" : "apply FAILED")
-    exit(ok ? 0 : 1)
+    switch dc.applyLow(args[i + 1] == "default" ? nil : args[i + 1]) {
+    case .ok: print("applied"); exit(0)
+    case .failed: print("apply FAILED"); exit(1)
+    case .deferred: print("apply DEFERRED (display not ready)"); exit(1)
+    }
 }
 
 if args.contains("--restore") {
@@ -57,6 +59,7 @@ if args.contains("--restore") {
     case .ok: print("restored"); exit(0)
     case .noCache: print("no home cache"); exit(1)
     case .failed: print("restore FAILED"); exit(1)
+    case .deferred: print("restore DEFERRED (display not ready)"); exit(1)
     }
 }
 
