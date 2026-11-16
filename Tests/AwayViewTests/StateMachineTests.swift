@@ -16,14 +16,17 @@ final class MockConnection: ConnectionObserving {
 }
 
 final class MockDisplay: DisplayControlling {
-    var applyLowSucceeds = true
+    var applyLowResult: ApplyResult = .ok
     var restoreResult: RestoreResult = .ok
     private(set) var events: [String] = []
 
-    func applyLow(_ resolution: String?) -> Bool {
-        guard applyLowSucceeds else { events.append("applyLow:FAILED"); return false }
-        events.append("applyLow:\(resolution ?? "default")")
-        return true
+    func applyLow(_ resolution: String?) -> ApplyResult {
+        switch applyLowResult {
+        case .ok: events.append("applyLow:\(resolution ?? "default")")
+        case .failed: events.append("applyLow:FAILED")
+        case .deferred: events.append("applyLow:DEFERRED")
+        }
+        return applyLowResult
     }
 
     func restoreHome(explicit resolution: String?) -> RestoreResult {
@@ -31,6 +34,7 @@ final class MockDisplay: DisplayControlling {
         case .ok: events.append("restore:\(resolution ?? "auto")")
         case .failed: events.append("restore:FAILED")
         case .noCache: events.append("restore:NOCACHE")
+        case .deferred: events.append("restore:DEFERRED")
         }
         return restoreResult
     }
@@ -219,10 +223,10 @@ final class StateMachineTests: XCTestCase {
     func testFailedApplyLowRetries() {
         sm.tick()
         flags.forceLow = true
-        display.applyLowSucceeds = false
+        display.applyLowResult = .failed
         sm.tick()
         XCTAssertEqual(lastState, .home, "適用失敗中は state を進めない")
-        display.applyLowSucceeds = true
+        display.applyLowResult = .ok
         sm.tick()
         XCTAssertEqual(lastState, .lowManual)
     }
@@ -275,6 +279,53 @@ final class StateMachineTests: XCTestCase {
         sm.tick()
         sm.tick()
         XCTAssertEqual(unavailableCount, 2)
+    }
+
+    // 17) 復帰が保留 (ディスプレイ未準備) の間は前進せず、hooks も capture も走らない
+    func testDeferredRestoreDoesNotAdvance() {
+        goLow()
+        let hooksBefore = highHooks
+        let capturesBefore = display.count("capture")
+        conn.ip = nil
+        display.restoreResult = .deferred
+        sm.tick()
+        sm.tick()
+        sm.tick()
+        XCTAssertEqual(lastState, .low, "保留中は state を進めない")
+        XCTAssertEqual(highHooks, hooksBefore, "保留中は on_high を発火しない")
+        XCTAssertEqual(display.count("capture"), capturesBefore, "保留中は capture しない (誤学習ガード)")
+    }
+
+    // 18) 保留が明けて ok が返ったら HIGH へ遷移し、on_high が 1 回だけ発火する
+    func testDeferredRestoreAdvancesOnceReady() {
+        goLow()
+        let hooksBefore = highHooks
+        conn.ip = nil
+        display.restoreResult = .deferred
+        sm.tick()
+        sm.tick()
+        display.restoreResult = .ok
+        sm.tick()
+        XCTAssertEqual(lastState, .home)
+        XCTAssertEqual(highHooks, hooksBefore + 1)
+        XCTAssertEqual(display.count("capture:follow"), 2, "起動時と復帰時の 2 回だけ追従する")
+    }
+
+    // 19) 低解像度の適用が保留の間も前進せず on_low を発火しない。明けたら適用する
+    func testDeferredApplyLowDoesNotAdvance() {
+        sm.tick()
+        conn.ip = "100.99.1.2"
+        display.applyLowResult = .deferred
+        sm.tick()                       // 一段階目
+        sm.tick()                       // 二段階目: 保留
+        sm.tick()
+        XCTAssertEqual(lastState, .home, "保留中は state を進めない")
+        XCTAssertEqual(lowHooks, 0, "保留中は on_low を発火しない")
+        display.applyLowResult = .ok
+        sm.tick()
+        sm.tick()
+        XCTAssertEqual(lastState, .low)
+        XCTAssertEqual(lowHooks, 1)
     }
 
     private func goLow() {

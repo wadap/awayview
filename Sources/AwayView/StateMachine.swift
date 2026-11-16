@@ -26,11 +26,18 @@ enum RestoreResult {
     case ok       // 復帰適用に成功
     case failed   // 適用失敗 (rc=1 相当): 前進禁止・リトライ
     case noCache  // 復帰先が無い (rc=2 相当): 初回起動。現在をホームとみなして前進
+    case deferred // 保留: ディスプレイが未準備で CG を呼んでいない。前進禁止
+}
+
+enum ApplyResult {
+    case ok       // 低解像度の適用に成功
+    case failed   // CG が拒否した / 候補モードが無い: 前進禁止・リトライ
+    case deferred // 保留: ディスプレイが未準備で CG を呼んでいない。前進禁止
 }
 
 protocol DisplayControlling {
     /// 低解像度を適用。nil は既定 (ホームの半分・同アスペクト・HiDPI 優先)
-    func applyLow(_ resolution: String?) -> Bool
+    func applyLow(_ resolution: String?) -> ApplyResult
     /// ホームへ復帰。resolution 指定時 (res_high) はそれを適用、nil なら自動学習分
     func restoreHome(explicit resolution: String?) -> RestoreResult
     /// ホーム配置の学習。onlyIfMissing=true は「下げる直前の確保」用。
@@ -132,7 +139,7 @@ final class StateMachine {
                 onHighRestored?()
             case .noCache:
                 break   // 初回起動: 現在をホームとみなす (以後の capture で学習)
-            case .failed:
+            case .failed, .deferred:
                 return false
             }
             last = .high
@@ -153,7 +160,7 @@ final class StateMachine {
     private func ensureLow() -> Bool {
         if last != .low {
             display.captureHome(onlyIfMissing: true)   // 下げる直前=ホームを確保
-            guard display.applyLow(flags.resLow) else { return false }
+            guard display.applyLow(flags.resLow) == .ok else { return false }
             applied = "low:\(flags.resLow ?? "default")"
             last = .low
             onLowApplied?()
@@ -166,7 +173,7 @@ final class StateMachine {
     private func reapplyLowIfChanged() {
         let desired = "low:\(flags.resLow ?? "default")"
         guard desired != applied else { return }
-        if display.applyLow(flags.resLow) {
+        if display.applyLow(flags.resLow) == .ok {
             applied = desired
             onLowApplied?()
         }

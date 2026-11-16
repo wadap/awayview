@@ -129,8 +129,8 @@ final class RealDisplayController: DisplayControlling {
 
     // --- DisplayControlling -----------------------------------------------
 
-    func applyLow(_ resolution: String?) -> Bool {
-        guard let id = resolveTarget() else { return false }
+    func applyLow(_ resolution: String?) -> ApplyResult {
+        guard let id = resolveTarget() else { return .failed }
         let modes = DisplayController.allModes(for: id)
         let target: DisplayModeInfo?
         if let resolution {
@@ -144,9 +144,9 @@ final class RealDisplayController: DisplayControlling {
         }
         guard let target else {
             log("!! no low mode candidate")
-            return false
+            return .failed
         }
-        return apply(target, on: id)
+        return apply(target, on: id) ? .ok : .failed
     }
 
     func restoreHome(explicit resolution: String?) -> RestoreResult {
