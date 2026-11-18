@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 
 // メニューバー UI とアプリ全体の組み立て。メニュー構成は SwiftBar 版と同一
 // (3 モードラジオ + 解像度サブメニュー + ログ + 常駐設定 + 終了)。
@@ -13,6 +14,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var paused = false        // スリープ通知で止めている (ログを対にするため)
     private var sleepObservers: [NSObjectProtocol] = []
     private var settingsWindow: SettingsWindowController?
+    private var relinkHotKey: HotKey?
 
     private var currentState: WatchState = .home
     private var currentIP: String?
@@ -58,6 +60,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         writer.log("watcher started (native)")
         observeSleep()
+
+        // 黒画面のときに目で見ずに押せるよう、当て直しはホットキーでも出す (⌃⌥⌘R)
+        relinkHotKey = HotKey(keyCode: kVK_ANSI_R, modifiers: controlKey | optionKey | cmdKey) { [weak self] in
+            self?.relink(source: "hotkey")
+        }
+        if relinkHotKey == nil {
+            writer.log("!! relink hotkey registration failed")
+        }
 
         let t = DispatchSource.makeTimerSource(queue: .main)
         t.schedule(deadline: .now() + 1, repeating: 3)   // POLL_INTERVAL 相当
@@ -348,6 +358,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(resParent(kind: .low, modes: modes))
         menu.addItem(.separator())
 
+        let relinkItem = NSMenuItem(title: L("menu.relink"), action: #selector(relinkFromMenu), keyEquivalent: "r")
+        relinkItem.keyEquivalentModifierMask = [.control, .option, .command]
+        relinkItem.target = self
+        menu.addItem(relinkItem)
+        menu.addItem(.separator())
+
         let logItem = NSMenuItem(title: L("menu.open_log"), action: #selector(openLog), keyEquivalent: "")
         logItem.target = self
         menu.addItem(logItem)
@@ -450,6 +466,18 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func selectResLow(_ sender: NSMenuItem) {
         settings.setResLow(sender.representedObject as? String)
         tick()
+    }
+
+    @objc private func relinkFromMenu() { relink(source: "menu") }
+
+    /// 外部ディスプレイの映像リンクを張り直す。失敗の理由は display 側がログに出す
+    private func relink(source: String) {
+        writer.log("-- relink requested (\(source))")
+        switch display.relink() {
+        case .ok: writer.log("-- relink done")
+        case .deferred: writer.log("-- relink skipped (display not ready)")
+        case .failed: writer.log("!! relink failed")
+        }
     }
 
     @objc private func openLog() {

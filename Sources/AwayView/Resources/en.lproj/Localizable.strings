@@ -15,6 +15,7 @@
 "res.low.title" = "Low res: %@";
 "res.high.default" = "Auto-learned%@";
 "res.low.default" = "Default (half of home)";
+"menu.relink" = "Re-link Display";
 "menu.open_log" = "Open Log";
 "menu.settings" = "Settings…";
 "menu.version" = "AwayView %@";

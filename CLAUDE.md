@@ -27,6 +27,7 @@ SwiftPM 単体 (Xcode プロジェクトなし)。`make build` が dist/AwayView
   とホーム学習 (UserDefaults)。列挙と状態問い合わせは `DisplayEnvironment` で
   注入できる。失敗ログは `LogThrottle.swift` で間引く
 - `Sources/AwayView/MenuController.swift` — NSStatusItem メニュー
+- `Sources/AwayView/HotKey.swift` — Carbon のグローバルホットキー (当て直し ⌃⌥⌘R)
 - `Sources/AwayView/SettingsWindow.swift` — SwiftUI 設定ウィンドウ
 - `Sources/AwayView/Hooks.swift` — ~/.config/awayview/hooks/on_{low,high}.d/
 - `Sources/CShim/` — XNU 非公開 ABI (pcblist_n) の C シム
@@ -52,6 +53,13 @@ SwiftPM 単体 (Xcode プロジェクトなし)。`make build` が dist/AwayView
   当てに行く。自動選出は UUID 未保存の初回だけ
 - **テストのフェイク display ID は実在しえない値にする** (`0xDEAD_0001` など)。
   1 や 2 は実機の ID と衝突し、テストが本物の解像度を変える (発生済み)
+- **当て直し (relink) は「同じポイント解像度でスケール違いのモードへ行って戻る」**。
+  KVM 切り替え後の起床で、macOS は設定済みのつもりなのにパネルが黒いままになる
+  ことがあり、蓋の開閉 (= 出力モードの再設定) で直る。構成変更を 1 回完了させる
+  たびに WindowServer は `set digital mode` を出し直すので (実機で確認済み)、往復で
+  同じ効果になる。このディスプレイは同一解像度のレート違いを公開しないので、
+  リフレッシュレートの往復は使えない。往復は同期で終える (tick を挟むと迂回中を
+  ホームと誤学習する)
 - 接続の一瞬の揺れで下げないため二段階 SETTLE (連続 2 tick で確定)
 - hooks は適用**成功後**のみ発火。失敗しても watcher は止めない
 - i18n は Localizable.strings (en/ja)。`L()` ヘルパー経由。watch.log は英語固定
@@ -72,7 +80,7 @@ SwiftPM 単体 (Xcode プロジェクトなし)。`make build` が dist/AwayView
   失敗は `!!`、停止・保留の出入りは `--` (`paused` / `resumed` /
   `display not ready` / `display ready`)
 - CLI 検証: `.build/release/AwayView --list-modes | --list-connections |
-  --apply <WxH|default> | --restore | --capture-home`
+  --apply <WxH|default> | --restore | --relink | --capture-home`
 
 ## 経緯
 

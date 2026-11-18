@@ -63,6 +63,16 @@ if args.contains("--restore") {
     }
 }
 
+if args.contains("--relink") {
+    let dc = RealDisplayController()
+    dc.log = { print($0) }
+    switch dc.relink() {
+    case .ok: print("relinked"); exit(0)
+    case .failed: print("relink FAILED"); exit(1)
+    case .deferred: print("relink DEFERRED (display not ready)"); exit(1)
+    }
+}
+
 if args.contains("--capture-home") {
     let dc = RealDisplayController()
     dc.captureHome(onlyIfMissing: false)
@@ -108,7 +118,7 @@ if args.contains("--install-update") {
 }
 
 if args.contains("--help") || args.contains("-h") {
-    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore | --check-update | --install-update]")
+    print("usage: AwayView [--list-modes | --list-connections | --capture-home | --apply <WxH|default> | --restore | --relink | --check-update | --install-update]")
     print("引数なしで起動するとメニューバーアプリとして常駐する")
     exit(0)
 }
